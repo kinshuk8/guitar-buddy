@@ -14,14 +14,15 @@ import 'package:fretlight/core/storage/app_database.dart';
 /// background; a failed write is logged and the in-memory value still holds
 /// for this session.
 final class LocalStore {
-  LocalStore._(this._db, this._settings, this._favorites, this._tunings);
+  LocalStore._(this._db, this._settings, this._favorites, this._tunings, this._songs);
 
   /// Store with no database, for tests and previews.
   LocalStore.memory({
     Map<String, String>? settings,
     Set<String>? favorites,
     List<Tuning>? customTunings,
-  }) : this._(null, {...?settings}, {...?favorites}, [...?customTunings]);
+    Map<String, String>? userSongs,
+  }) : this._(null, {...?settings}, {...?favorites}, [...?customTunings], {...?userSongs});
 
   static Future<LocalStore> open(AppDatabase db) async {
     final settings = await db.select(db.settings).get();
@@ -31,11 +32,15 @@ final class LocalStore {
     final tunings = await (db.select(
       db.customTunings,
     )..orderBy([(t) => OrderingTerm.asc(t.position)])).get();
+    final songs = await (db.select(
+      db.userSongs,
+    )..orderBy([(s) => OrderingTerm.asc(s.addedAt)])).get();
     return LocalStore._(
       db,
       {for (final s in settings) s.key: s.value},
       {for (final f in favorites) f.symbol},
       [for (final t in tunings) ?_tuningFromRow(t)],
+      {for (final s in songs) s.id: s.source},
     );
   }
 
@@ -43,6 +48,9 @@ final class LocalStore {
   final Map<String, String> _settings;
   final Set<String> _favorites;
   final List<Tuning> _tunings;
+
+  /// User songs: id → ChordPro source, oldest first.
+  final Map<String, String> _songs;
 
   /// Completes when every write issued so far has finished (for tests).
   Future<void> get flushed => _writes;
@@ -104,6 +112,24 @@ final class LocalStore {
         await db.batch((b) => b.insertAll(db.customTunings, rows));
       }),
     );
+  }
+
+  Map<String, String> get userSongs => Map.unmodifiable(_songs);
+
+  void putUserSong(String id, String source) {
+    _songs[id] = source;
+    _write(
+      (db) => db
+          .into(db.userSongs)
+          .insertOnConflictUpdate(
+            UserSongsCompanion.insert(id: id, source: source, addedAt: DateTime.now()),
+          ),
+    );
+  }
+
+  void deleteUserSong(String id) {
+    if (_songs.remove(id) == null) return;
+    _write((db) => (db.delete(db.userSongs)..where((s) => s.id.equals(id))).go());
   }
 
   void _write(Future<Object?> Function(AppDatabase db) op) {

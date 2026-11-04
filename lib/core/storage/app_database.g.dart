@@ -669,17 +669,252 @@ class CustomTuningsCompanion extends UpdateCompanion<CustomTuning> {
   }
 }
 
+class $UserSongsTable extends UserSongs with TableInfo<$UserSongsTable, UserSong> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UserSongsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _addedAtMeta = const VerificationMeta('addedAt');
+  @override
+  late final GeneratedColumn<DateTime> addedAt = GeneratedColumn<DateTime>(
+    'added_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, source, addedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'user_songs';
+  @override
+  VerificationContext validateIntegrity(Insertable<UserSong> instance, {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(_sourceMeta, source.isAcceptableOrUnknown(data['source']!, _sourceMeta));
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('added_at')) {
+      context.handle(_addedAtMeta, addedAt.isAcceptableOrUnknown(data['added_at']!, _addedAtMeta));
+    } else if (isInserting) {
+      context.missing(_addedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  UserSong map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UserSong(
+      id: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      addedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}added_at'],
+      )!,
+    );
+  }
+
+  @override
+  $UserSongsTable createAlias(String alias) {
+    return $UserSongsTable(attachedDatabase, alias);
+  }
+}
+
+class UserSong extends DataClass implements Insertable<UserSong> {
+  final String id;
+  final String source;
+  final DateTime addedAt;
+  const UserSong({required this.id, required this.source, required this.addedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['source'] = Variable<String>(source);
+    map['added_at'] = Variable<DateTime>(addedAt);
+    return map;
+  }
+
+  UserSongsCompanion toCompanion(bool nullToAbsent) {
+    return UserSongsCompanion(id: Value(id), source: Value(source), addedAt: Value(addedAt));
+  }
+
+  factory UserSong.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UserSong(
+      id: serializer.fromJson<String>(json['id']),
+      source: serializer.fromJson<String>(json['source']),
+      addedAt: serializer.fromJson<DateTime>(json['addedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'source': serializer.toJson<String>(source),
+      'addedAt': serializer.toJson<DateTime>(addedAt),
+    };
+  }
+
+  UserSong copyWith({String? id, String? source, DateTime? addedAt}) =>
+      UserSong(id: id ?? this.id, source: source ?? this.source, addedAt: addedAt ?? this.addedAt);
+  UserSong copyWithCompanion(UserSongsCompanion data) {
+    return UserSong(
+      id: data.id.present ? data.id.value : this.id,
+      source: data.source.present ? data.source.value : this.source,
+      addedAt: data.addedAt.present ? data.addedAt.value : this.addedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserSong(')
+          ..write('id: $id, ')
+          ..write('source: $source, ')
+          ..write('addedAt: $addedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, source, addedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserSong &&
+          other.id == this.id &&
+          other.source == this.source &&
+          other.addedAt == this.addedAt);
+}
+
+class UserSongsCompanion extends UpdateCompanion<UserSong> {
+  final Value<String> id;
+  final Value<String> source;
+  final Value<DateTime> addedAt;
+  final Value<int> rowid;
+  const UserSongsCompanion({
+    this.id = const Value.absent(),
+    this.source = const Value.absent(),
+    this.addedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  UserSongsCompanion.insert({
+    required String id,
+    required String source,
+    required DateTime addedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       source = Value(source),
+       addedAt = Value(addedAt);
+  static Insertable<UserSong> custom({
+    Expression<String>? id,
+    Expression<String>? source,
+    Expression<DateTime>? addedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (source != null) 'source': source,
+      if (addedAt != null) 'added_at': addedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  UserSongsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? source,
+    Value<DateTime>? addedAt,
+    Value<int>? rowid,
+  }) {
+    return UserSongsCompanion(
+      id: id ?? this.id,
+      source: source ?? this.source,
+      addedAt: addedAt ?? this.addedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (addedAt.present) {
+      map['added_at'] = Variable<DateTime>(addedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserSongsCompanion(')
+          ..write('id: $id, ')
+          ..write('source: $source, ')
+          ..write('addedAt: $addedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $SettingsTable settings = $SettingsTable(this);
   late final $FavoriteChordsTable favoriteChords = $FavoriteChordsTable(this);
   late final $CustomTuningsTable customTunings = $CustomTuningsTable(this);
+  late final $UserSongsTable userSongs = $UserSongsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [settings, favoriteChords, customTunings];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    settings,
+    favoriteChords,
+    customTunings,
+    userSongs,
+  ];
 }
 
 typedef $$SettingsTableCreateCompanionBuilder = SettingsCompanion Function({
@@ -1077,6 +1312,136 @@ typedef $$CustomTuningsTableProcessedTableManager =
       CustomTuning,
       PrefetchHooks Function()
     >;
+typedef $$UserSongsTableCreateCompanionBuilder = UserSongsCompanion Function({
+  required String id,
+  required String source,
+  required DateTime addedAt,
+  Value<int> rowid,
+});
+typedef $$UserSongsTableUpdateCompanionBuilder = UserSongsCompanion Function({
+  Value<String> id,
+  Value<String> source,
+  Value<DateTime> addedAt,
+  Value<int> rowid,
+});
+
+class $$UserSongsTableFilterComposer extends Composer<_$AppDatabase, $UserSongsTable> {
+  $$UserSongsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get addedAt =>
+      $composableBuilder(column: $table.addedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$UserSongsTableOrderingComposer extends Composer<_$AppDatabase, $UserSongsTable> {
+  $$UserSongsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get addedAt =>
+      $composableBuilder(column: $table.addedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$UserSongsTableAnnotationComposer extends Composer<_$AppDatabase, $UserSongsTable> {
+  $$UserSongsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get addedAt =>
+      $composableBuilder(column: $table.addedAt, builder: (column) => column);
+}
+
+class $$UserSongsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $UserSongsTable,
+          UserSong,
+          $$UserSongsTableFilterComposer,
+          $$UserSongsTableOrderingComposer,
+          $$UserSongsTableAnnotationComposer,
+          $$UserSongsTableCreateCompanionBuilder,
+          $$UserSongsTableUpdateCompanionBuilder,
+          (UserSong, BaseReferences<_$AppDatabase, $UserSongsTable, UserSong>),
+          UserSong,
+          PrefetchHooks Function()
+        > {
+  $$UserSongsTableTableManager(_$AppDatabase db, $UserSongsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () => $$UserSongsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$UserSongsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$UserSongsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> source = const Value.absent(),
+            Value<DateTime> addedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) => UserSongsCompanion(id: id, source: source, addedAt: addedAt, rowid: rowid),
+          createCompanionCallback: ({
+            required String id,
+            required String source,
+            required DateTime addedAt,
+            Value<int> rowid = const Value.absent(),
+          }) => UserSongsCompanion.insert(id: id, source: source, addedAt: addedAt, rowid: rowid),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$UserSongsTable, UserSong>(table),
+                  BaseReferences<_$AppDatabase, $UserSongsTable, UserSong>(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$UserSongsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $UserSongsTable,
+      UserSong,
+      $$UserSongsTableFilterComposer,
+      $$UserSongsTableOrderingComposer,
+      $$UserSongsTableAnnotationComposer,
+      $$UserSongsTableCreateCompanionBuilder,
+      $$UserSongsTableUpdateCompanionBuilder,
+      (UserSong, BaseReferences<_$AppDatabase, $UserSongsTable, UserSong>),
+      UserSong,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1086,4 +1451,5 @@ class $AppDatabaseManager {
       $$FavoriteChordsTableTableManager(_db, _db.favoriteChords);
   $$CustomTuningsTableTableManager get customTunings =>
       $$CustomTuningsTableTableManager(_db, _db.customTunings);
+  $$UserSongsTableTableManager get userSongs => $$UserSongsTableTableManager(_db, _db.userSongs);
 }

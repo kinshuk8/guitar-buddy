@@ -34,7 +34,18 @@ class CustomTunings extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [Settings, FavoriteChords, CustomTunings])
+/// Songs the user pasted or imported, stored as their ChordPro source (the
+/// bundled starter songs are assets, not rows).
+class UserSongs extends Table {
+  TextColumn get id => text()();
+  TextColumn get source => text()();
+  DateTimeColumn get addedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+@DriftDatabase(tables: [Settings, FavoriteChords, CustomTunings, UserSongs])
 final class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
@@ -47,9 +58,15 @@ final class AppDatabase extends _$AppDatabase {
     ),
   );
 
+  /// 1: settings, favourites, custom tunings (M3). 2: user songs (M6).
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
-  MigrationStrategy get migration => MigrationStrategy(onCreate: (m) => m.createAll());
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) await m.createTable(userSongs);
+    },
+  );
 }

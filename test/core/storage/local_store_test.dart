@@ -52,4 +52,41 @@ void main() {
         .insert(CustomTuningsCompanion.insert(id: 'x', name: 'Bad', notes: 'E2 nope', position: 0));
     expect((await LocalStore.open(db)).customTunings, isEmpty);
   });
+
+  test('upgrading a version-1 database keeps its data and adds user songs', () async {
+    // The schema as shipped in M3-M5, with a saved setting.
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) => raw
+          ..execute('CREATE TABLE settings (key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)')
+          ..execute(
+            'CREATE TABLE favorite_chords (symbol TEXT NOT NULL PRIMARY KEY, added_at INTEGER NOT NULL)',
+          )
+          ..execute(
+            'CREATE TABLE custom_tunings (id TEXT NOT NULL PRIMARY KEY, name TEXT NOT NULL, '
+            'notes TEXT NOT NULL, position INTEGER NOT NULL)',
+          )
+          ..execute("INSERT INTO settings VALUES ('tuner.a4', '432.0')")
+          ..execute('PRAGMA user_version = 1'),
+      ),
+    );
+    addTearDown(db.close);
+    final store = await LocalStore.open(db);
+    expect(store.setting('tuner.a4'), '432.0', reason: 'old data survives');
+    store.putUserSong('u1', '{title: Mine}');
+    await store.flushed;
+    expect((await LocalStore.open(db)).userSongs, {'u1': '{title: Mine}'});
+  });
+
+  test('user songs: add, replace, delete', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final store = await LocalStore.open(db)
+      ..putUserSong('a', 'one')
+      ..putUserSong('b', 'two')
+      ..putUserSong('a', 'one, edited')
+      ..deleteUserSong('b');
+    await store.flushed;
+    expect((await LocalStore.open(db)).userSongs, {'a': 'one, edited'});
+  });
 }

@@ -1,7 +1,7 @@
 # Fretlight
 
 A free, offline guitar practice app for Android and iOS: tuner, chord
-library, metronome and note/chord identifier; song play-along in progress.
+library, metronome, note/chord identifier and ChordPro song play-along.
 
 No account, no ads, no analytics, no network access at runtime. The
 microphone is only open while a listening screen is visible, and audio is
@@ -16,8 +16,8 @@ never saved.
 | 3 | Chord library with synthesised playback | done |
 | 4 | Metronome | done |
 | 5 | Live note and chord identifier | done |
-| 6 | Song play-along (ChordPro) | next |
-| 7 | Practice mode, progression pack, polish | |
+| 6 | Song play-along (ChordPro) | done |
+| 7 | Practice mode, progression pack, polish | next |
 
 ## Building
 
@@ -59,6 +59,13 @@ dart run tool/chords_db/convert.dart /tmp/chords-db
 
 This rewrites `assets/chords/guitar.json` and `docs/chord-data-report.md`,
 which lists every voicing that failed validation and why.
+
+## Songs
+
+Songs are [ChordPro](https://www.chordpro.org) sheets. Twelve public-domain
+starter songs ship in `assets/songs/`; you can paste or import your own. The
+player assumes **one chord per bar** (ChordPro has no timing), so the
+starter songs put a chord at every bar; adjust the tempo for other sheets.
 
 ## Layout
 

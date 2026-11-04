@@ -22,6 +22,8 @@ generated from the packages actually compiled in.
 | drift_flutter | 0.3.1 | MIT | Opens the on-device database |
 | sqlite3 | 3.8.0 | MIT (bindings); SQLite itself is public domain | SQLite engine, built by its build hook |
 | path_provider | 2.1.6 | BSD-3-Clause | Locates the app-private database directory |
+| file_picker | 13.3.2 | MIT | Importing ChordPro files |
+| wakelock_plus | 1.8.2 | BSD-3-Clause | Keeping the screen on during play-along |
 
 ## Fonts
 
@@ -52,7 +54,27 @@ generated from the packages actually compiled in.
 | [tombatossals/chords-db](https://github.com/tombatossals/chords-db) (guitar), commit `df06fa7` | MIT, © 2016 David Rubert | Bundled at `assets/chords/guitar.json` | Converted by `tool/chords_db/convert.dart`; every voicing checked against its chord formula and the source's own MIDI notes. 116 of 3,283 failed and are left out, listed in `docs/chord-data-report.md`. Licence text bundled at `assets/chords/chords-db-LICENSE.txt` and registered with `LicenseRegistry` |
 | Chordonomicon (ailsntua/Chordonomicon) | CC BY-NC 4.0 | Planned (milestone 7) | Separate removable pack; chord progressions only, no artist or Spotify IDs |
 
-## Original content
+## Starter songs
 
-Starter songs (Milestone 6) are public-domain works; each file records its
-public-domain basis in its metadata. Chord arrangements are original.
+Twelve songs in `assets/songs/`, all public domain. Each file records its
+public-domain basis in a `{meta: public_domain …}` line, and the chord
+arrangements are original to Fretlight. Where a period text contains slurs
+(the 1848 *Oh! Susanna*), only the verses without them are used; *Scarborough
+Fair* follows 19th-century collected texts, not the 1966 Simon & Garfunkel
+arrangement; *Michael, Row the Boat Ashore* uses only the 1867 *Slave Songs of
+the United States* refrain and verse.
+
+| Song | Basis |
+|---|---|
+| Amazing Grace | John Newton, 1779; tune "New Britain", 1829 |
+| Auld Lang Syne | Robert Burns, 1788; traditional melody |
+| Down in the Valley | Traditional (Kentucky) |
+| Home on the Range | Brewster M. Higley / Daniel E. Kelley, c. 1872 |
+| Michael, Row the Boat Ashore | Spiritual, published 1867 |
+| Oh My Darling, Clementine | Percy Montrose, 1884 |
+| Oh! Susanna | Stephen Foster, 1848 |
+| Red River Valley | Traditional; published 1896 |
+| Scarborough Fair | Traditional English ballad |
+| Shenandoah | Traditional, early 19th century |
+| Swing Low, Sweet Chariot | Spiritual, before 1862; published 1872 |
+| When the Saints Go Marching In | Traditional spiritual |

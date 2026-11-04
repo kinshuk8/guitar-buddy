@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fretlight/app/router.dart';
 import 'package:fretlight/core/design/theme.dart';
 import 'package:fretlight/core/painting/fretboard.dart';
 import 'package:fretlight/features/gallery/presentation/gallery_screen.dart';
@@ -25,10 +29,9 @@ void main() {
       expect(find.bySemanticsLabel(label), findsOneWidget, reason: label);
     }
     expect(find.text('Tune'), findsOneWidget);
-    await tester.tap(find.bySemanticsLabel('Songs'));
-    await tester.pumpAndSettle();
-    expect(find.text('Songs'), findsWidgets);
-    await tester.tap(find.text('Widget gallery'));
+    // The gallery is a debug-only route (linked from the bottom of Songs).
+    final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
+    unawaited(container.read(routerProvider).push('/gallery'));
     await tester.pumpAndSettle();
     expect(find.text('Gallery'), findsOneWidget);
   });

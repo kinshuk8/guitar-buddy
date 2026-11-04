@@ -1,0 +1,21 @@
+{title: Auld Lang Syne}
+{artist: Robert Burns (words), traditional (melody)}
+{key: G}
+{time: 4/4}
+{tempo: 84}
+{meta: public_domain Words by Robert Burns, 1788; traditional Scottish melody.}
+{meta: arrangement Original chord arrangement for Fretlight}
+
+{start_of_verse}
+Should [G]auld acquaintance [D]be forgot,
+And [G]never brought to [C]mind?
+Should [G]auld acquaintance [D]be forgot,
+And [C]auld [D]lang [G]syne?
+{end_of_verse}
+
+{start_of_chorus}
+For [G]auld lang syne, my [D]dear,
+For [G]auld lang [C]syne,
+We'll [G]tak a cup o' [D]kindness yet,
+For [C]auld [D]lang [G]syne.
+{end_of_chorus}

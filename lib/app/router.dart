@@ -1,13 +1,13 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fretlight/app/coming_soon.dart';
 import 'package:fretlight/app/shell.dart';
 import 'package:fretlight/features/chords/presentation/chord_detail_screen.dart';
 import 'package:fretlight/features/chords/presentation/chords_screen.dart';
 import 'package:fretlight/features/gallery/presentation/gallery_screen.dart';
 import 'package:fretlight/features/identify/presentation/identify_screen.dart';
 import 'package:fretlight/features/metronome/presentation/metronome_screen.dart';
+import 'package:fretlight/features/songs/presentation/play_along_screen.dart';
+import 'package:fretlight/features/songs/presentation/songs_screen.dart';
 import 'package:fretlight/features/tuner/presentation/tuner_screen.dart';
 import 'package:go_router/go_router.dart';
 
@@ -47,7 +47,21 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [GoRoute(path: '/tempo', builder: (context, state) => const MetronomeScreen())],
           ),
-          _branch('/songs', 'Songs', 6, Icons.queue_music_rounded),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/songs',
+                builder: (context, state) => const SongsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'play',
+                    builder: (context, state) =>
+                        PlayAlongScreen(id: state.uri.queryParameters['id'] ?? ''),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
       // Developer tool: compiled out of release builds.
@@ -57,14 +71,3 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(router.dispose);
   return router;
 });
-
-StatefulShellBranch _branch(String path, String title, int milestone, IconData icon) =>
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: path,
-          builder: (context, state) =>
-              ComingSoonScreen(title: title, milestone: milestone, icon: icon),
-        ),
-      ],
-    );
