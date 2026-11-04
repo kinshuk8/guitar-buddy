@@ -1,7 +1,7 @@
 # Fretlight
 
 A free, offline guitar practice app for Android and iOS: tuner, chord
-library and metronome; chord identifier and song play-along in progress.
+library, metronome and note/chord identifier; song play-along in progress.
 
 No account, no ads, no analytics, no network access at runtime. The
 microphone is only open while a listening screen is visible, and audio is
@@ -15,8 +15,8 @@ never saved.
 | 2 | Tuner | done |
 | 3 | Chord library with synthesised playback | done |
 | 4 | Metronome | done |
-| 5 | Live note and chord identifier | next |
-| 6 | Song play-along (ChordPro) | |
+| 5 | Live note and chord identifier | done |
+| 6 | Song play-along (ChordPro) | next |
 | 7 | Practice mode, progression pack, polish | |
 
 ## Building
@@ -36,7 +36,8 @@ flutter test
 ```
 
 The detector tests print accuracy reports, and the metronome test prints
-a 10-minute drift report ([docs/metronome-timing.md](docs/metronome-timing.md)). To score the tuner against real
+a 10-minute drift report ([docs/metronome-timing.md](docs/metronome-timing.md)), and the
+chord test prints the identifier's accuracy ([docs/accuracy-report-m5.md](docs/accuracy-report-m5.md)). To score the tuner against real
 recordings, drop WAV files into `test/fixtures/wav/` (see the README there).
 
 ## Regenerating things

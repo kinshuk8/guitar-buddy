@@ -13,4 +13,14 @@ harness as the synthesized signals and printed as an accuracy report.
 * **Licence:** only add recordings you made yourself; they are committed to
   an open-source repository.
 
-The test is skipped while this folder has no `.wav` files.
+## Chords
+
+Strummed chords for the identifier go here too, scored by
+`test/core/audio/chord_accuracy_test.dart`:
+
+* **Name:** `chord_<Symbol>_<anything>.wav`, e.g. `chord_Am_open_iphone.wav`,
+  `chord_Fs_barre_room.wav` (`s` for sharp, since `#` is awkward in file names).
+* **Format:** 48 kHz (the phone's capture rate).
+* **Content:** one clear strum, let ring for 2–3 seconds.
+
+Each test is skipped while it has no matching files.

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,8 +8,8 @@ import 'package:fretlight/core/design/theme.dart';
 import 'package:fretlight/core/design/tokens.dart';
 import 'package:fretlight/core/music/music.dart';
 import 'package:fretlight/core/widgets/glass_controls.dart';
+import 'package:fretlight/core/widgets/listening.dart';
 import 'package:fretlight/core/widgets/music_text.dart';
-import 'package:fretlight/core/widgets/stage_buttons.dart';
 import 'package:fretlight/features/tuner/application/tuner_controller.dart';
 import 'package:fretlight/features/tuner/domain/tuner_session.dart';
 import 'package:fretlight/features/tuner/presentation/tuner_gauge.dart';
@@ -24,99 +23,56 @@ class TunerScreen extends ConsumerStatefulWidget {
 }
 
 class _TunerScreenState extends ConsumerState<TunerScreen> {
-  late final AppLifecycleListener _lifecycle;
-  ValueListenable<TickerModeData>? _tickerMode;
-  bool? _active;
-
-  @override
-  void initState() {
-    super.initState();
-    _lifecycle = AppLifecycleListener(onStateChange: (_) => _sync());
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // The tab shell keeps hidden tabs alive with tickers disabled. Following
-    // TickerMode means the mic closes the moment you switch tabs, without
-    // the tuner having to know anything about the router.
-    final notifier = TickerMode.getValuesNotifier(context);
-    if (notifier != _tickerMode) {
-      _tickerMode?.removeListener(_sync);
-      _tickerMode = notifier..addListener(_sync);
-    }
-    _sync();
-  }
-
-  void _sync() {
-    final visible = _tickerMode?.value.enabled ?? true;
-    final foreground = switch (WidgetsBinding.instance.lifecycleState) {
-      AppLifecycleState.resumed || null => true,
-      _ => false,
-    };
-    final active = visible && foreground;
-    if (active == _active) return;
-    _active = active;
-    // Deferred: _sync can run during build (didChangeDependencies).
-    scheduleMicrotask(() {
-      if (mounted) unawaited(ref.read(tunerProvider.notifier).setActive(active: active));
-    });
-  }
-
-  @override
-  void dispose() {
-    _tickerMode?.removeListener(_sync);
-    _lifecycle.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final status = ref.watch(tunerProvider.select((s) => s.status));
     final text = context.stageText;
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        // Bottom padding clears the floating tab bar.
-        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 112),
-        child: Column(
-          children: [
-            const _TopBar(),
-            Expanded(
-              child: switch (status) {
-                TunerStatus.needsPermission => _Blocked(
-                  title: 'Microphone needed',
-                  body:
-                      'The tuner listens to your guitar. Nothing is recorded or leaves your phone.',
-                  action: 'Allow microphone',
-                  onAction: () => ref.read(tunerProvider.notifier).requestPermission(),
-                ),
-                TunerStatus.permanentlyDenied => _Blocked(
-                  title: 'Microphone is off',
-                  body: 'Turn on microphone access for Fretlight in Settings to use the tuner.',
-                  action: 'Open Settings',
-                  onAction: () => ref.read(tunerProvider.notifier).openSettings(),
-                ),
-                TunerStatus.error => _Blocked(
-                  title: 'Couldn’t start the microphone',
-                  body: 'Another app may be using it.',
-                  action: 'Try again',
-                  onAction: () async {
-                    final n = ref.read(tunerProvider.notifier);
-                    await n.setActive(active: false);
-                    await n.setActive(active: true);
-                  },
-                ),
-                _ => const _Live(),
-              },
-            ),
-            if (status == TunerStatus.interrupted)
-              Padding(
-                padding: const EdgeInsets.only(bottom: Space.md),
-                child: Text('Paused while another app uses the microphone', style: text.caption),
+    return ListenWhileVisible(
+      onChanged: ({required active}) =>
+          unawaited(ref.read(tunerProvider.notifier).setActive(active: active)),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          // Bottom padding clears the floating tab bar.
+          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 112),
+          child: Column(
+            children: [
+              const _TopBar(),
+              Expanded(
+                child: switch (status) {
+                  TunerStatus.needsPermission => MicBlocked(
+                    title: 'Microphone needed',
+                    body: 'The tuner listens to your guitar. Nothing is recorded or leaves your phone.',
+                    action: 'Allow microphone',
+                    onAction: () => ref.read(tunerProvider.notifier).requestPermission(),
+                  ),
+                  TunerStatus.permanentlyDenied => MicBlocked(
+                    title: 'Microphone is off',
+                    body: 'Turn on microphone access for Fretlight in Settings to use the tuner.',
+                    action: 'Open Settings',
+                    onAction: () => ref.read(tunerProvider.notifier).openSettings(),
+                  ),
+                  TunerStatus.error => MicBlocked(
+                    title: 'Couldn’t start the microphone',
+                    body: 'Another app may be using it.',
+                    action: 'Try again',
+                    onAction: () async {
+                      final n = ref.read(tunerProvider.notifier);
+                      await n.setActive(active: false);
+                      await n.setActive(active: true);
+                    },
+                  ),
+                  _ => const _Live(),
+                },
               ),
-            const _StringRow(),
-          ],
+              if (status == TunerStatus.interrupted)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: Space.md),
+                  child: Text('Paused while another app uses the microphone', style: text.caption),
+                ),
+              const _StringRow(),
+            ],
+          ),
         ),
       ),
     );
@@ -288,40 +244,6 @@ class _NoteName extends StatelessWidget {
 String spokenNote(Note n) {
   final name = n.pitchClass.name(Spelling.forRoot(n.pitchClass));
   return '${name.replaceFirst('#', ' sharp').replaceFirst(RegExp(r'b$'), ' flat')} ${n.octave}';
-}
-
-class _Blocked extends StatelessWidget {
-  const _Blocked({
-    required this.title,
-    required this.body,
-    required this.action,
-    required this.onAction,
-  });
-
-  final String title;
-  final String body;
-  final String action;
-  final VoidCallback onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.stageText;
-    final c = context.stage;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.mic_none_rounded, size: 36, color: c.textTertiary),
-          const SizedBox(height: Space.md),
-          Text(title, style: t.heading, textAlign: TextAlign.center),
-          const SizedBox(height: Space.sm),
-          Text(body, style: t.bodySecondary, textAlign: TextAlign.center),
-          const SizedBox(height: Space.xl),
-          StageButton(label: action, onPressed: onAction),
-        ],
-      ),
-    );
-  }
 }
 
 /// Auto + one button per string. Tap a string to lock to it; tap it again

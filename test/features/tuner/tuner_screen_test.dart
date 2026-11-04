@@ -30,6 +30,14 @@ Future<FakeAudioInputSource> pumpApp(
   return fake;
 }
 
+/// Lets the shared mic's serialised start/stop queue run.
+Future<void> settleMic(WidgetTester tester, {int ms = 300}) async {
+  for (var i = 0; i < 3; i++) {
+    await tester.runAsync(() => Future<void>.delayed(Duration(milliseconds: ms ~/ 3)));
+    await tester.pump();
+  }
+}
+
 /// Plays a pluck into the fake mic and waits for the isolate to analyse it.
 Future<void> pluck(WidgetTester tester, FakeAudioInputSource mic, double hz) async {
   await tester.runAsync(() async {
@@ -66,7 +74,11 @@ void main() {
     expect(mic.isCapturing, isTrue);
     await tester.tap(find.bySemanticsLabel('Tempo'));
     await tester.pumpAndSettle();
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    // The shared mic releases through a serialised queue: let it run.
+    for (var i = 0; i < 3; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+    }
     expect(mic.isCapturing, isFalse);
     await tester.tap(find.bySemanticsLabel('Tune'));
     await tester.pumpAndSettle();
@@ -102,13 +114,11 @@ void main() {
   testWidgets('a phone call pauses and resumes capture', (tester) async {
     final mic = await pumpApp(tester);
     mic.interrupt(began: true);
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
-    await tester.pump();
+    await settleMic(tester);
     expect(mic.isCapturing, isFalse);
     expect(find.text('Paused while another app uses the microphone'), findsOneWidget);
     mic.interrupt(began: false);
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
-    await tester.pump();
+    await settleMic(tester);
     expect(mic.isCapturing, isTrue);
   });
 

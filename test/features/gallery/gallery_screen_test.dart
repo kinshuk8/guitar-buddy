@@ -25,9 +25,9 @@ void main() {
       expect(find.bySemanticsLabel(label), findsOneWidget, reason: label);
     }
     expect(find.text('Tune'), findsOneWidget);
-    await tester.tap(find.bySemanticsLabel('Identify'));
+    await tester.tap(find.bySemanticsLabel('Songs'));
     await tester.pumpAndSettle();
-    expect(find.text('Identify'), findsWidgets);
+    expect(find.text('Songs'), findsWidgets);
     await tester.tap(find.text('Widget gallery'));
     await tester.pumpAndSettle();
     expect(find.text('Gallery'), findsOneWidget);

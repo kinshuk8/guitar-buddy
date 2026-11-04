@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:isolate';
 import 'dart:typed_data';
 
+import 'package:fretlight/core/audio/dsp/chord_detector.dart';
+import 'package:fretlight/core/audio/dsp/chord_tracker.dart';
 import 'package:fretlight/core/audio/dsp/mpm.dart';
 import 'package:fretlight/core/audio/dsp/pitch_detector.dart';
 import 'package:fretlight/core/audio/dsp/pitch_tracker.dart';
@@ -9,13 +11,13 @@ import 'package:fretlight/core/audio/dsp/yin.dart';
 
 enum DetectorKind { mpm, yin }
 
-/// Runs pitch tracking in a background isolate so the UI thread only ever
-/// handles ~47 tiny result messages per second.
+/// Runs pitch tracking (and, for the identifier, chord detection) in a
+/// background isolate so the UI thread only handles small result messages.
 ///
 /// PCM goes in as [TransferableTypedData]: the bytes are moved to the
 /// isolate rather than copied. Results come back as [PitchFrame]s.
 final class DspWorker {
-  DspWorker._(this._isolate, this._toWorker, this._fromWorker, this.frames);
+  DspWorker._(this._isolate, this._toWorker, this._fromWorker, this.frames, this.chordFrames);
 
   final Isolate _isolate;
   final SendPort _toWorker;
@@ -24,22 +26,36 @@ final class DspWorker {
   /// Analysis frames, in order.
   final Stream<PitchFrame> frames;
 
+  /// Chord estimates (~12 per second), only when spawned with `chords`.
+  final Stream<ChordEstimate> chordFrames;
+
   static Future<DspWorker> spawn({
     required int sampleRate,
     DetectorKind kind = DetectorKind.mpm,
+    bool chords = false,
   }) async {
     final fromWorker = ReceivePort();
     final isolate = await Isolate.spawn(_main, (
       fromWorker.sendPort,
       sampleRate,
       kind,
+      chords,
     ), debugName: 'fretlight-dsp');
     final messages = fromWorker.asBroadcastStream();
     final toWorker = await messages.first as SendPort;
     final frames = messages
         .where((m) => m is List<PitchFrame>)
         .expand((m) => m as List<PitchFrame>);
-    return DspWorker._(isolate, toWorker, fromWorker, frames.asBroadcastStream());
+    final chordFrames = messages
+        .where((m) => m is List<ChordEstimate>)
+        .expand((m) => m as List<ChordEstimate>);
+    return DspWorker._(
+      isolate,
+      toWorker,
+      fromWorker,
+      frames.asBroadcastStream(),
+      chordFrames.asBroadcastStream(),
+    );
   }
 
   /// Sends a chunk of PCM16 little-endian mono samples.
@@ -54,8 +70,8 @@ final class DspWorker {
     _isolate.kill();
   }
 
-  static void _main((SendPort, int, DetectorKind) args) {
-    final (out, sampleRate, kind) = args;
+  static void _main((SendPort, int, DetectorKind, bool) args) {
+    final (out, sampleRate, kind, withChords) = args;
     final inbox = ReceivePort();
     out.send(inbox.sendPort);
 
@@ -65,6 +81,9 @@ final class DspWorker {
       DetectorKind.yin => YinDetector(sampleRate: sampleRate, windowSize: g.window),
     };
     final tracker = PitchTracker(detector: detector, hop: g.hop);
+    final chordTracker = withChords
+        ? ChordTracker(detector: ChromaChordDetector(sampleRate: sampleRate))
+        : null;
     var floats = Float32List(0);
 
     inbox.listen((message) {
@@ -74,6 +93,7 @@ final class DspWorker {
       }
       if (message == #reset) {
         tracker.reset();
+        chordTracker?.reset();
         return;
       }
       final bytes = (message as TransferableTypedData).materialize();
@@ -85,6 +105,11 @@ final class DspWorker {
       }
       final frames = tracker.push(floats);
       if (frames.isNotEmpty) out.send(frames);
+      if (chordTracker != null) {
+        final estimates = chordTracker.push(floats);
+        // The top candidates are all the smoother needs; keeps messages small.
+        if (estimates.isNotEmpty) out.send([for (final e in estimates) e.trimmed(24)]);
+      }
     });
   }
 }

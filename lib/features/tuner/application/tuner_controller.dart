@@ -4,10 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fretlight/core/audio/engine/dsp_worker.dart';
 import 'package:fretlight/core/audio/input/audio_input_source.dart';
-import 'package:fretlight/core/audio/input/record_input_source.dart';
+import 'package:fretlight/core/audio/input/shared_mic.dart';
 import 'package:fretlight/core/music/music.dart';
 import 'package:fretlight/core/storage/local_store.dart';
 import 'package:fretlight/features/tuner/domain/tuner_session.dart';
+
+export 'package:fretlight/core/audio/input/shared_mic.dart' show audioInputProvider;
 
 enum TunerStatus {
   /// Not visible or app in background; mic closed.
@@ -69,13 +71,6 @@ final class TunerState {
   );
 }
 
-/// The microphone. Overridden with a fake in tests.
-final audioInputProvider = Provider<AudioInputSource>((ref) {
-  final source = RecordInputSource();
-  ref.onDispose(() => unawaited(source.dispose()));
-  return source;
-});
-
 final tunerProvider = NotifierProvider<TunerController, TunerState>(TunerController.new);
 
 final class TunerController extends Notifier<TunerState> {
@@ -98,7 +93,7 @@ final class TunerController extends Notifier<TunerState> {
 
   @override
   TunerState build() {
-    _input = ref.watch(audioInputProvider);
+    _input = ref.watch(sharedMicProvider).client();
     _events = _input.events.listen(_onInputEvent);
     ref.onDispose(() {
       unawaited(_events?.cancel());

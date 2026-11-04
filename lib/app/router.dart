@@ -6,6 +6,7 @@ import 'package:fretlight/app/shell.dart';
 import 'package:fretlight/features/chords/presentation/chord_detail_screen.dart';
 import 'package:fretlight/features/chords/presentation/chords_screen.dart';
 import 'package:fretlight/features/gallery/presentation/gallery_screen.dart';
+import 'package:fretlight/features/identify/presentation/identify_screen.dart';
 import 'package:fretlight/features/metronome/presentation/metronome_screen.dart';
 import 'package:fretlight/features/tuner/presentation/tuner_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -22,7 +23,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [GoRoute(path: '/tune', builder: (context, state) => const TunerScreen())],
           ),
-          _branch('/identify', 'Identify', 5, Icons.graphic_eq_rounded),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/identify', builder: (context, state) => const IdentifyScreen()),
+            ],
+          ),
           StatefulShellBranch(
             routes: [
               GoRoute(
