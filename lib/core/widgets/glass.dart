@@ -227,6 +227,8 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
 Future<T?> showGlassSheet<T>(BuildContext context, {required WidgetBuilder builder}) {
   return showModalBottomSheet<T>(
     context: context,
+    // Above the floating tab bar, not tucked behind it.
+    useRootNavigator: true,
     useSafeArea: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,

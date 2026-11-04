@@ -1,7 +1,8 @@
 # Fretlight
 
 A free, offline guitar practice app for Android and iOS: tuner, chord
-library, metronome, note/chord identifier and ChordPro song play-along.
+library, metronome, note/chord identifier, ChordPro song play-along and a
+practice mode that listens and waits for each chord.
 
 No account, no ads, no analytics, no network access at runtime. The
 microphone is only open while a listening screen is visible, and audio is
@@ -17,7 +18,7 @@ never saved.
 | 4 | Metronome | done |
 | 5 | Live note and chord identifier | done |
 | 6 | Song play-along (ChordPro) | done |
-| 7 | Practice mode, progression pack, polish | next |
+| 7 | Practice mode, progression pack, polish | done |
 
 ## Building
 
@@ -66,6 +67,29 @@ Songs are [ChordPro](https://www.chordpro.org) sheets. Twelve public-domain
 starter songs ship in `assets/songs/`; you can paste or import your own. The
 player assumes **one chord per bar** (ChordPro has no timing), so the
 starter songs put a chord at every bar; adjust the tempo for other sheets.
+
+## The progression pack (optional)
+
+`assets/packs/chordonomicon/` holds 300 common chord loops distilled from
+[Chordonomicon](https://huggingface.co/datasets/ailsntua/Chordonomicon)
+(CC BY-NC 4.0, non-commercial). To rebuild it:
+
+```bash
+curl -L -o /tmp/chordonomicon_v2.csv https://huggingface.co/datasets/ailsntua/Chordonomicon/resolve/main/chordonomicon_v2.csv
+dart run tool/chordonomicon/build_pack.dart /tmp/chordonomicon_v2.csv
+```
+
+To ship without it, delete that folder and its line in `pubspec.yaml`; the
+Progressions view simply disappears.
+
+## App icon
+
+The icon is drawn in code. After editing `tool/icon/render_icon_test.dart`:
+
+```bash
+flutter test tool/icon/render_icon_test.dart
+tool/icon/install_icons.sh
+```
 
 ## Layout
 

@@ -6,6 +6,8 @@ import 'package:fretlight/features/chords/presentation/chords_screen.dart';
 import 'package:fretlight/features/gallery/presentation/gallery_screen.dart';
 import 'package:fretlight/features/identify/presentation/identify_screen.dart';
 import 'package:fretlight/features/metronome/presentation/metronome_screen.dart';
+import 'package:fretlight/features/practice/presentation/practice_screen.dart';
+import 'package:fretlight/features/settings/presentation/settings_screen.dart';
 import 'package:fretlight/features/songs/presentation/play_along_screen.dart';
 import 'package:fretlight/features/songs/presentation/songs_screen.dart';
 import 'package:fretlight/features/tuner/presentation/tuner_screen.dart';
@@ -64,6 +66,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      // Practice sits above the tabs: one task, full attention.
+      GoRoute(path: '/practice', builder: (context, state) => const PracticeScreen()),
+      GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
       // Developer tool: compiled out of release builds.
       if (kDebugMode) GoRoute(path: '/gallery', builder: (context, state) => const GalleryScreen()),
     ],

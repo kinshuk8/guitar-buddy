@@ -13,6 +13,8 @@ final class ChordReading {
     this.singleNote,
     this.bass,
     this.fading = false,
+    this.strum = 0,
+    this.settled = true,
   });
 
   /// Null while unsure or for a single note.
@@ -27,6 +29,15 @@ final class ChordReading {
 
   /// The sound has stopped; the last chord is held briefly, dimmed.
   final bool fading;
+
+  /// Which strum this reading belongs to (counts up from 1 per strum heard).
+  /// Practice mode judges each strum once.
+  final int strum;
+
+  /// The analysis window lies inside the strum, past its attack. The first
+  /// frames of a strum mix silence with the pick's click and can read as
+  /// anything; practice waits for this before judging.
+  final bool settled;
 
   static const notSureBelow = 0.35;
 
@@ -68,6 +79,7 @@ final class ChordSmoother {
   /// sound (a fan, a TV, the room) never has the sudden attack of a strum,
   /// so it can't produce a chord label however chord-like its spectrum.
   bool _armed = false;
+  int _strums = 0;
 
   /// Frames since the last strum. While a strum settles any chord may take
   /// over; afterwards the same chord with notes lost (D → D5 as the high E
@@ -75,6 +87,9 @@ final class ChordSmoother {
   /// ringing chord doesn't change notes without a new strum.
   int _sinceOnset = 0;
   static const _settleFrames = 4;
+
+  /// About a 16k window's worth of hops at 48 kHz (3 × 85 ms ≈ the window).
+  static const _settledFrames = 3;
   Chord? _shown;
   Chord? _challenger;
   int _challengerFrames = 0;
@@ -114,6 +129,7 @@ final class ChordSmoother {
         singleNote: last.singleNote,
         bass: last.bass,
         fading: true,
+        strum: last.strum,
       );
     }
     _silentFor = 0;
@@ -123,7 +139,10 @@ final class ChordSmoother {
     // loud sound counts as a strum.
     final onset = _lastDb == null ? e.rmsDb > -30 : e.rmsDb > _lastDb! + onsetDb;
     _lastDb = e.rmsDb;
-    if (onset) _armed = true;
+    if (onset) {
+      _armed = true;
+      _strums++;
+    }
     if (!_armed) return null;
     if (onset) {
       _avg.clear();
@@ -141,7 +160,12 @@ final class ChordSmoother {
     final single = _majoritySingle();
     if (single != null) {
       _shown = null;
-      return _reading = ChordReading(singleNote: single, bass: e.bass);
+      return _reading = ChordReading(
+        singleNote: single,
+        bass: e.bass,
+        strum: _strums,
+        settled: _sinceOnset >= _settledFrames,
+      );
     }
 
     final ranked = _avg.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
@@ -182,6 +206,8 @@ final class ChordSmoother {
       chord: confidence >= ChordReading.notSureBelow ? shown : null,
       confidence: confidence,
       bass: e.bass,
+      strum: _strums,
+      settled: _sinceOnset >= _settledFrames,
     );
   }
 

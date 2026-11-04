@@ -24,6 +24,7 @@ generated from the packages actually compiled in.
 | path_provider | 2.1.6 | BSD-3-Clause | Locates the app-private database directory |
 | file_picker | 13.3.2 | MIT | Importing ChordPro files |
 | wakelock_plus | 1.8.2 | BSD-3-Clause | Keeping the screen on during play-along |
+| sqlite3 (direct) | 3.8.0 | MIT | Reading the progression pack |
 
 ## Fonts
 
@@ -52,7 +53,7 @@ generated from the packages actually compiled in.
 | Dataset | Licence | Status | Notes |
 |---|---|---|---|
 | [tombatossals/chords-db](https://github.com/tombatossals/chords-db) (guitar), commit `df06fa7` | MIT, © 2016 David Rubert | Bundled at `assets/chords/guitar.json` | Converted by `tool/chords_db/convert.dart`; every voicing checked against its chord formula and the source's own MIDI notes. 116 of 3,283 failed and are left out, listed in `docs/chord-data-report.md`. Licence text bundled at `assets/chords/chords-db-LICENSE.txt` and registered with `LicenseRegistry` |
-| Chordonomicon (ailsntua/Chordonomicon) | CC BY-NC 4.0 | Planned (milestone 7) | Separate removable pack; chord progressions only, no artist or Spotify IDs |
+| [Chordonomicon](https://huggingface.co/datasets/ailsntua/Chordonomicon) (Kantarelis et al., 2024, arXiv:2410.22046), file `chordonomicon_v2.csv` at commit `2ad317c` | **CC BY-NC 4.0** | Bundled as an optional pack at `assets/packs/chordonomicon/` | Reduced by `tool/chordonomicon/build_pack.dart` to aggregate counts for the 300 most common repeating 3–4 chord loops (songs using each, top genres, decades). No per-song rows, song or artist identifiers, Spotify IDs, dates or lyrics are included. Attribution in `ATTRIBUTION.txt`, in the app (Songs → Progressions, Settings) and on the licence page. **Non-commercial:** remove the pack before any paid or ad-supported release. |
 
 ## Starter songs
 

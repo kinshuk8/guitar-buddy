@@ -14,6 +14,7 @@ import 'package:fretlight/features/tuner/application/tuner_controller.dart';
 import 'package:fretlight/features/tuner/domain/tuner_session.dart';
 import 'package:fretlight/features/tuner/presentation/tuner_gauge.dart';
 import 'package:fretlight/features/tuner/presentation/tuner_sheets.dart';
+import 'package:go_router/go_router.dart';
 
 class TunerScreen extends ConsumerStatefulWidget {
   const TunerScreen({super.key});
@@ -99,6 +100,12 @@ class _TopBar extends ConsumerWidget {
           label: '${a4.round()} Hz',
           semantics: 'Reference pitch ${a4.round()} hertz. Change',
           onTap: () => showReferenceSheet(context),
+        ),
+        const SizedBox(width: Space.sm),
+        GlassIconButton(
+          icon: Icons.settings_outlined,
+          semantics: 'Settings',
+          onTap: () => context.push('/settings'),
         ),
       ],
     );

@@ -1,0 +1,18 @@
+Chordonomicon progressions pack
+
+Source: Chordonomicon, https://huggingface.co/datasets/ailsntua/Chordonomicon
+Authors: Spyridon Kantarelis, Konstantinos Thomas, Vassilis Lyberatos,
+Edmund Dervakos, Giorgos Stamou.
+Paper: CHORDONOMICON: A Dataset of 666,000 Songs and their Chord
+Progressions. arXiv:2410.22046, 2024.
+
+Licence: Creative Commons Attribution-NonCommercial 4.0 International
+(CC BY-NC 4.0), https://creativecommons.org/licenses/by-nc/4.0/
+
+Changes made: the dataset was reduced to aggregate statistics of repeating
+3-4 chord loops (how many songs use each loop, their most common genres and
+decades). No per-song data, song or artist identifiers, or dates are
+included. Built by tool/chordonomicon/build_pack.dart.
+
+This pack is optional and can be removed from the app without affecting
+anything else.

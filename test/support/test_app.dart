@@ -8,6 +8,7 @@ import 'package:fretlight/core/storage/local_store.dart';
 import 'package:fretlight/features/chords/application/chord_library_provider.dart';
 import 'package:fretlight/features/chords/application/chord_player.dart';
 import 'package:fretlight/features/chords/domain/chord_library.dart';
+import 'package:fretlight/features/progressions/data/progression_pack.dart';
 import 'package:fretlight/features/songs/application/songs_controller.dart';
 import 'package:fretlight/features/tuner/application/tuner_controller.dart';
 
@@ -34,6 +35,9 @@ final class TestDevices {
     localStoreProvider.overrideWithValue(store),
     if (library case final lib?) chordLibraryProvider.overrideWith((ref) async => lib),
     // Read from disk: rootBundle's cache only works for a file's first test.
+    progressionPackProvider.overrideWith(
+      (ref) async => ProgressionPack.openFile(ProgressionPack.asset),
+    ),
     bundledSongSourcesProvider.overrideWith(
       (ref) async => {
         for (final id in bundledSongIds) id: File('assets/songs/$id.cho').readAsStringSync(),

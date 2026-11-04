@@ -16,6 +16,8 @@ import 'package:fretlight/core/widgets/glass_controls.dart';
 import 'package:fretlight/core/widgets/music_text.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
 import 'package:fretlight/features/chords/application/chord_library_provider.dart';
+import 'package:fretlight/features/practice/application/practice_controller.dart';
+import 'package:fretlight/features/practice/presentation/practice_screen.dart';
 import 'package:fretlight/features/settings/application/appearance.dart';
 import 'package:fretlight/features/songs/application/songs_controller.dart';
 import 'package:fretlight/features/songs/domain/chordpro.dart';
@@ -163,6 +165,23 @@ class _PlayerState extends ConsumerState<_Player> with SingleTickerProviderState
     if (_loopSection != null && (_beat.value < span.$1 || _beat.value >= span.$2)) _seekTo(span.$1);
   }
 
+  void _practise() {
+    if (_playing) _pause();
+    final events = _timeline.events.where((e) => e.chord != null).toList();
+    if (events.isEmpty) return;
+    startPractice(
+      context,
+      ref,
+      PracticePlan(
+        title: _song.title,
+        // The mic hears what sounds: transposed, capo or not.
+        sounding: [for (final e in events) e.chord!.transpose(_arrangement.transpose)],
+        capo: _arrangement.capo,
+        lines: [for (final e in events) _song.sections[e.section].lines[e.line].lyrics],
+      ),
+    );
+  }
+
   bool get _keepAwake => ref.read(localStoreProvider).setting(_keepAwakeKey) != 'false';
 
   Future<void> _setAwake({required bool on}) async {
@@ -222,7 +241,13 @@ class _PlayerState extends ConsumerState<_Player> with SingleTickerProviderState
                       ],
                     ),
                   ),
-                  const SizedBox(width: Space.md),
+                  const SizedBox(width: Space.sm),
+                  GlassIconButton(
+                    icon: Icons.hearing_rounded,
+                    semantics: 'Practise this song: it waits for each chord',
+                    onTap: _practise,
+                  ),
+                  const SizedBox(width: Space.sm),
                   GlassIconButton(
                     icon: Icons.tune_rounded,
                     semantics: 'Key, capo and tempo',

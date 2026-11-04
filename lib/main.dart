@@ -17,6 +17,14 @@ Future<void> main() async {
     yield LicenseEntryWithLineBreaks([
       'chords-db (chord shapes)',
     ], await rootBundle.loadString('assets/chords/chords-db-LICENSE.txt'));
+    // Optional pack: listed only when it's in the build.
+    try {
+      yield LicenseEntryWithLineBreaks([
+        'Chordonomicon (progression pack)',
+      ], await rootBundle.loadString('assets/packs/chordonomicon/ATTRIBUTION.txt'));
+    } on Object {
+      // Pack removed from this build.
+    }
   });
   // A few kilobytes of settings: read before the first frame so screens
   // never flash defaults.
