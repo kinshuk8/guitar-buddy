@@ -6,6 +6,7 @@ import 'package:fretlight/app/shell.dart';
 import 'package:fretlight/features/chords/presentation/chord_detail_screen.dart';
 import 'package:fretlight/features/chords/presentation/chords_screen.dart';
 import 'package:fretlight/features/gallery/presentation/gallery_screen.dart';
+import 'package:fretlight/features/metronome/presentation/metronome_screen.dart';
 import 'package:fretlight/features/tuner/presentation/tuner_screen.dart';
 import 'package:go_router/go_router.dart';
 
@@ -38,7 +39,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          _branch('/tempo', 'Metronome', 4, Icons.av_timer_rounded),
+          StatefulShellBranch(
+            routes: [GoRoute(path: '/tempo', builder: (context, state) => const MetronomeScreen())],
+          ),
           _branch('/songs', 'Songs', 6, Icons.queue_music_rounded),
         ],
       ),

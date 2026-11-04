@@ -60,7 +60,15 @@ class GlassPill extends StatelessWidget {
                   Icon(icon, size: 18, color: on ? c.textPrimary : c.textSecondary),
                   if (label.isNotEmpty) const SizedBox(width: Space.xs + 2),
                 ],
-                if (label.isNotEmpty) Text(label, style: context.stageText.label),
+                if (label.isNotEmpty)
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: context.stageText.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 if (chevron) ...[
                   const SizedBox(width: Space.xs),
                   Icon(Icons.expand_more_rounded, size: 18, color: c.textTertiary),

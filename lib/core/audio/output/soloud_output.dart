@@ -53,12 +53,43 @@ final class SoLoudOutput implements AudioOutput {
   }
 
   @override
+  Future<void> warmUp() => _ensureInit();
+
+  @override
+  Duration get clock => _soloud.isInitialized ? _soloud.getEngineTime() : Duration.zero;
+
+  @override
+  Future<LoopVoice> scheduleLoop(Uint8List wav, {required Duration at}) async {
+    await _ensureInit();
+    await AppAudioSession.ensurePlayback();
+    // autoDispose: the buffer is freed once the voice stops, so tempo
+    // changes don't pile up loops in memory.
+    final source = await _soloud.loadMem('loop-${_loops++}', wav, autoDispose: true);
+    final handle = _soloud.playScheduled(source, at, looping: true);
+    final voice = LoopVoice(handle);
+    _loopHandles.add(handle);
+    return voice;
+  }
+
+  @override
+  void stopLoopAt(LoopVoice voice, Duration at) {
+    if (!_soloud.isInitialized) return;
+    final handle = voice.id as SoundHandle;
+    _soloud.stopScheduled(handle, at);
+    _loopHandles.remove(handle);
+  }
+
+  int _loops = 0;
+  final _loopHandles = <SoundHandle>{};
+
+  @override
   Future<void> stopAll() async {
     if (!_soloud.isInitialized) return;
-    for (final h in _channels.values) {
+    for (final h in [..._channels.values, ..._loopHandles]) {
       if (_soloud.getIsValidVoiceHandle(h)) await _soloud.stop(h);
     }
     _channels.clear();
+    _loopHandles.clear();
   }
 
   @override
