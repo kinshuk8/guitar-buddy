@@ -1,0 +1,31 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    # Promote the lints most likely to hide real bugs.
+    unawaited_futures: error
+    discarded_futures: error
+    missing_return: error
+  exclude:
+    - build/**
+    - "**/*.g.dart"
+    - android/**
+    - ios/**
+
+linter:
+  rules:
+    # This is an app, not a published package.
+    public_member_api_docs: false
+    # Pure-Dart core uses short math names (hz, a4, pc) that read better than long ones.
+    lines_longer_than_80_chars: false
+    # Pushes the new Dart 3.12 constructor syntax; revisit once the ecosystem uses it.
+    unnecessary_type_name_in_constructor: false
+    # Canvas code reads better as separate draw statements with comments between.
+    cascade_invocations: false
+
+formatter:
+  page_width: 100

@@ -1,0 +1,34 @@
+name: fretlight
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.7
+
+dependencies:
+  audio_session: ^0.2.4
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.4.3
+  go_router: ^18.1.2
+  meta: ^1.19.0
+  permission_handler: ^13.0.2
+  record: ^7.1.2
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^11.0.0
+
+flutter:
+  uses-material-design: true
+
+  fonts:
+    # Variable font (wght 100-900, opsz 14-32). Weights are applied through
+    # FontVariation in theme.dart, so one file covers every style.
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Variable.ttf
+
+  assets:
+    - assets/fonts/Inter-OFL.txt
