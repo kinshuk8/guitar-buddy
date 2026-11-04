@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fretlight/app/app.dart';
 import 'package:fretlight/core/design/theme.dart';
 import 'package:fretlight/core/painting/fretboard.dart';
 import 'package:fretlight/features/gallery/presentation/gallery_screen.dart';
-import 'package:fretlight/features/tuner/application/tuner_controller.dart';
 
-import '../../support/fake_audio_input.dart';
+import '../../support/test_app.dart';
 
-Widget _host({required ThemeData theme, bool reducedMotion = false}) => ProviderScope(
-  child: MaterialApp(
+Widget _host({required ThemeData theme, bool reducedMotion = false}) => TestDevices().wrap(
+  MaterialApp(
     theme: theme,
     home: MediaQuery(
       data: MediaQueryData(size: const Size(390, 844), disableAnimations: reducedMotion),
@@ -21,21 +18,16 @@ Widget _host({required ThemeData theme, bool reducedMotion = false}) => Provider
 
 void main() {
   testWidgets('app boots into the shell with five tabs', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [audioInputProvider.overrideWithValue(FakeAudioInputSource())],
-        child: const FretlightApp(),
-      ),
-    );
+    await tester.pumpWidget(TestDevices().app());
     await tester.pumpAndSettle();
     // Every tab is labelled for screen readers; only the active one shows text.
     for (final label in ['Tune', 'Identify', 'Chords', 'Tempo', 'Songs']) {
       expect(find.bySemanticsLabel(label), findsOneWidget, reason: label);
     }
     expect(find.text('Tune'), findsOneWidget);
-    await tester.tap(find.bySemanticsLabel('Chords'));
+    await tester.tap(find.bySemanticsLabel('Identify'));
     await tester.pumpAndSettle();
-    expect(find.text('Chords'), findsWidgets);
+    expect(find.text('Identify'), findsWidgets);
     await tester.tap(find.text('Widget gallery'));
     await tester.pumpAndSettle();
     expect(find.text('Gallery'), findsOneWidget);

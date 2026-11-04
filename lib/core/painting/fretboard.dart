@@ -9,6 +9,8 @@ import 'package:fretlight/core/painting/fretboard_geometry.dart';
 import 'package:fretlight/core/painting/fretboard_painter.dart';
 
 /// Lets a parent pluck or strum strings (e.g. when a chord is played).
+/// Drives one [Fretboard] or ChordDiagram at a time: the widget drains the
+/// queue as it reads it.
 final class FretboardController extends ChangeNotifier {
   final List<int> _pending = [];
 
@@ -25,7 +27,8 @@ final class FretboardController extends ChangeNotifier {
     }
   }
 
-  List<int> _drain() {
+  /// Plucks requested since the last call. For the widget being driven.
+  List<int> drainPlucks() {
     final out = List<int>.of(_pending);
     _pending.clear();
     return out;
@@ -104,7 +107,7 @@ class _FretboardState extends State<Fretboard> with SingleTickerProviderStateMix
   }
 
   void _onControllerPluck() {
-    widget.controller?._drain().forEach(_pluck);
+    widget.controller?.drainPlucks().forEach(_pluck);
   }
 
   void _pluck(int string) {

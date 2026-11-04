@@ -3,25 +3,26 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fretlight/app/app.dart';
 import 'package:fretlight/core/audio/input/audio_input_source.dart';
 import 'package:fretlight/core/audio/synth/karplus_strong.dart';
 import 'package:fretlight/core/music/music.dart';
+import 'package:fretlight/core/storage/local_store.dart';
 import 'package:fretlight/features/tuner/application/tuner_controller.dart';
 
 import '../../support/fake_audio_input.dart';
+import '../../support/test_app.dart';
 
-Future<FakeAudioInputSource> pumpApp(WidgetTester tester, {FakeAudioInputSource? mic}) async {
-  final fake = mic ?? FakeAudioInputSource();
+Future<FakeAudioInputSource> pumpApp(
+  WidgetTester tester, {
+  FakeAudioInputSource? mic,
+  LocalStore? store,
+}) async {
+  final devices = TestDevices(mic: mic, store: store);
+  final fake = devices.mic;
   tester.view.physicalSize = const Size(1206, 2622);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [audioInputProvider.overrideWithValue(fake)],
-      child: const FretlightApp(),
-    ),
-  );
+  await tester.pumpWidget(devices.app());
   await tester.pump();
   // Let the controller's async start (permission → start → isolate spawn) finish.
   await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
@@ -63,7 +64,7 @@ void main() {
   testWidgets('switching tabs releases the microphone; coming back reopens it', (tester) async {
     final mic = await pumpApp(tester);
     expect(mic.isCapturing, isTrue);
-    await tester.tap(find.bySemanticsLabel('Chords'));
+    await tester.tap(find.bySemanticsLabel('Tempo'));
     await tester.pumpAndSettle();
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
     expect(mic.isCapturing, isFalse);

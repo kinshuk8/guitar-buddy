@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/services.dart';
 import 'package:fretlight/core/audio/input/audio_input_source.dart';
+import 'package:fretlight/core/audio/session/app_audio_session.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 
@@ -56,21 +57,8 @@ final class RecordInputSource implements AudioInputSource {
   Future<void> _configureSession() async {
     if (_sessionConfigured) return;
     if (Platform.isIOS) await _recorder.ios?.manageAudioSession(false);
+    await AppAudioSession.ensureCapture();
     final session = await AudioSession.instance;
-    await session.configure(
-      AudioSessionConfiguration(
-        avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
-        avAudioSessionCategoryOptions:
-            AVAudioSessionCategoryOptions.defaultToSpeaker |
-            AVAudioSessionCategoryOptions.allowBluetoothA2dp,
-        avAudioSessionMode: AVAudioSessionMode.measurement,
-        androidAudioAttributes: const AndroidAudioAttributes(
-          contentType: AndroidAudioContentType.music,
-          usage: AndroidAudioUsage.media,
-        ),
-        androidWillPauseWhenDucked: true,
-      ),
-    );
     await _interruptions?.cancel();
     _interruptions = session.interruptionEventStream.listen((e) {
       _events.add(e.begin ? const InterruptionBegan() : const InterruptionEnded());

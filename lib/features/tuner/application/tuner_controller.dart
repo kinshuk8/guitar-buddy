@@ -6,6 +6,7 @@ import 'package:fretlight/core/audio/engine/dsp_worker.dart';
 import 'package:fretlight/core/audio/input/audio_input_source.dart';
 import 'package:fretlight/core/audio/input/record_input_source.dart';
 import 'package:fretlight/core/music/music.dart';
+import 'package:fretlight/core/storage/local_store.dart';
 import 'package:fretlight/features/tuner/domain/tuner_session.dart';
 
 enum TunerStatus {
@@ -79,6 +80,7 @@ final tunerProvider = NotifierProvider<TunerController, TunerState>(TunerControl
 
 final class TunerController extends Notifier<TunerState> {
   late AudioInputSource _input;
+  late LocalStore _store;
   DspWorker? _worker;
   StreamSubscription<Uint8List>? _pcm;
   StreamSubscription<Object>? _frames;
@@ -103,8 +105,21 @@ final class TunerController extends Notifier<TunerState> {
       unawaited(_stopCapture());
       _worker?.dispose();
     });
-    return TunerState(tuning: Tuning.standard);
+    _store = ref.watch(localStoreProvider);
+    final custom = _store.customTunings;
+    final lastId = _store.setting(_tuningKey);
+    final a4 = double.tryParse(_store.setting(_a4Key) ?? '');
+    return TunerState(
+      tuning:
+          [...Tuning.presets, ...custom].where((t) => t.id == lastId).firstOrNull ??
+          Tuning.standard,
+      customTunings: custom,
+      a4: a4 == null ? PitchMath.defaultA4 : a4.clamp(PitchMath.minA4, PitchMath.maxA4),
+    );
   }
+
+  static const _tuningKey = 'tuner.tuning';
+  static const _a4Key = 'tuner.a4';
 
   /// Called by the tuner screen when it becomes visible/hidden or the app
   /// moves between foreground and background.
@@ -126,11 +141,13 @@ final class TunerController extends Notifier<TunerState> {
     state = state.copyWith(tuning: tuning, lockedString: () => null, reading: () => null);
     _session?.tuning = tuning;
     _session?.lockedString = null;
+    _store.setSetting(_tuningKey, tuning.id);
   }
 
   void saveCustomTuning(Tuning tuning) {
     final others = state.customTunings.where((t) => t.id != tuning.id);
     state = state.copyWith(customTunings: [...others, tuning]);
+    _store.setCustomTunings(state.customTunings);
     selectTuning(tuning);
   }
 
@@ -138,6 +155,7 @@ final class TunerController extends Notifier<TunerState> {
     state = state.copyWith(
       customTunings: state.customTunings.where((t) => t.id != tuning.id).toList(),
     );
+    _store.setCustomTunings(state.customTunings);
     if (state.tuning.id == tuning.id) selectTuning(Tuning.standard);
   }
 
@@ -151,6 +169,7 @@ final class TunerController extends Notifier<TunerState> {
     final clamped = hz.clamp(PitchMath.minA4, PitchMath.maxA4);
     state = state.copyWith(a4: clamped, reading: () => null);
     _session?.pitchMath = PitchMath(a4: clamped);
+    _store.setSetting(_a4Key, clamped.toString());
   }
 
   /// Every queued step re-checks `ref.mounted`: the provider can be

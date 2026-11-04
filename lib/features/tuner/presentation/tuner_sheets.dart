@@ -40,7 +40,6 @@ class _TuningSheet extends ConsumerWidget {
     final state = ref.watch(tunerProvider);
     final controller = ref.read(tunerProvider.notifier);
     final c = context.stage;
-    final t = context.stageText;
     return ListView(
       shrinkWrap: true,
       padding: const EdgeInsets.only(bottom: Space.lg),
@@ -76,13 +75,6 @@ class _TuningSheet extends ConsumerWidget {
                 builder: (_) => _CustomTuningEditor(base: state.tuning),
               );
             },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
-          child: Text(
-            'Custom tunings are kept until the app closes; saving arrives with the library.',
-            style: t.caption.copyWith(color: c.textTertiary),
           ),
         ),
       ],

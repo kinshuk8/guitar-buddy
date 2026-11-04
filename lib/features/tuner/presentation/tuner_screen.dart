@@ -8,6 +8,7 @@ import 'package:fretlight/core/design/motion.dart';
 import 'package:fretlight/core/design/theme.dart';
 import 'package:fretlight/core/design/tokens.dart';
 import 'package:fretlight/core/music/music.dart';
+import 'package:fretlight/core/widgets/glass_controls.dart';
 import 'package:fretlight/core/widgets/music_text.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
 import 'package:fretlight/features/tuner/application/tuner_controller.dart';
@@ -131,68 +132,19 @@ class _TopBar extends ConsumerWidget {
     final a4 = ref.watch(tunerProvider.select((s) => s.a4));
     return Row(
       children: [
-        _Pill(
+        GlassPill(
           label: tuning.name,
           semantics: 'Tuning: ${tuning.name}. Change tuning',
           onTap: () => showTuningSheet(context),
           chevron: true,
         ),
         const Spacer(),
-        _Pill(
+        GlassPill(
           label: '${a4.round()} Hz',
           semantics: 'Reference pitch ${a4.round()} hertz. Change',
           onTap: () => showReferenceSheet(context),
         ),
       ],
-    );
-  }
-}
-
-class _Pill extends StatelessWidget {
-  const _Pill({
-    required this.label,
-    required this.semantics,
-    required this.onTap,
-    this.chevron = false,
-  });
-
-  final String label;
-  final String semantics;
-  final VoidCallback onTap;
-  final bool chevron;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.stage;
-    return Semantics(
-      button: true,
-      label: semantics,
-      excludeSemantics: true,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.sm + 2),
-            decoration: BoxDecoration(
-              color: c.glassFill,
-              borderRadius: const BorderRadius.all(Radii.pill),
-              border: Border.all(color: c.glassBorder),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(label, style: context.stageText.label),
-                if (chevron) ...[
-                  const SizedBox(width: Space.xs),
-                  Icon(Icons.expand_more_rounded, size: 18, color: c.textTertiary),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

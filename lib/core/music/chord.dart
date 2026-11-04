@@ -32,7 +32,27 @@ enum ChordQuality {
   minor9('m9', 'minor 9th', {0, 2, 3, 10}, {7}, 3),
   // 11ths and 13ths are routinely voiced without the 3rd/9th/11th.
   dominant11('11', 'dominant 11th', {0, 5, 10}, {2, 4, 7}, 4),
-  dominant13('13', 'dominant 13th', {0, 4, 9, 10}, {2, 5, 7}, 4);
+  dominant13('13', 'dominant 13th', {0, 4, 9, 10}, {2, 5, 7}, 4),
+  // Less common colours, present in the chord library's data.
+  majorFlat5('(b5)', 'major flat 5', {0, 4, 6}, {}, 3),
+  sus2sus4('sus2sus4', 'sus2 sus4', {0, 2, 5}, {7}, 3),
+  add11('add11', 'add 11', {0, 4, 5}, {7}, 3),
+  minor6add9('m69', 'minor 6/9', {0, 2, 3, 9}, {7}, 3),
+  dominant7flat5('7b5', '7th flat 5', {0, 4, 6, 10}, {}, 3),
+  dominant7flat9('7b9', '7th flat 9', {0, 1, 4, 10}, {7}, 4),
+  dominant7sharp9('7#9', '7th sharp 9', {0, 3, 4, 10}, {7}, 4),
+  dominant9flat5('9b5', '9th flat 5', {0, 2, 4, 6, 10}, {}, 4),
+  dominant9sharp11('9#11', '9th sharp 11', {0, 2, 4, 6, 10}, {7}, 4),
+  aug9('aug9', 'augmented 9th', {0, 2, 4, 8, 10}, {}, 4),
+  major7flat5('maj7b5', 'major 7th flat 5', {0, 4, 6, 11}, {}, 4),
+  major7sharp5('maj7#5', 'major 7th sharp 5', {0, 4, 8, 11}, {}, 4),
+  major7sus2('maj7sus2', 'major 7th sus2', {0, 2, 11}, {7}, 4),
+  major11('maj11', 'major 11th', {0, 5, 11}, {2, 4, 7}, 4),
+  major13('maj13', 'major 13th', {0, 4, 9, 11}, {2, 5, 7}, 4),
+  minor11('m11', 'minor 11th', {0, 3, 5, 10}, {2, 7}, 4),
+  minorMajor7flat5('mmaj7b5', 'minor-major 7th flat 5', {0, 3, 6, 11}, {}, 4),
+  minorMajor9('mmaj9', 'minor-major 9th', {0, 2, 3, 11}, {7}, 4),
+  minorMajor11('mmaj11', 'minor-major 11th', {0, 3, 5, 11}, {2, 7}, 4);
 
   ChordQuality(this.suffix, this.label, this.required, this.optional, this.complexity);
 
