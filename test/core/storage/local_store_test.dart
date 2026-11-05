@@ -89,4 +89,55 @@ void main() {
     await store.flushed;
     expect((await LocalStore.open(db)).userSongs, {'a': 'one, edited'});
   });
+
+  test('custom chords: saved, replaced, deleted, and a bad row is skipped', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final store = await LocalStore.open(db)
+      ..putCustomChord('a', const CustomChordData(name: 'Gadd9', frets: [3, 2, 0, 2, 0, 3]))
+      ..putCustomChord('b', const CustomChordData(name: 'X', frets: [null, 0, 2, 2, 2, 0]))
+      ..deleteCustomChord('b');
+    await store.flushed;
+    await db
+        .into(db.customChords)
+        .insert(
+          CustomChordsCompanion.insert(
+            id: 'bad',
+            name: 'Bad',
+            frets: '1,2',
+            addedAt: DateTime(2026),
+          ),
+        );
+    final again = await LocalStore.open(db);
+    expect(again.customChords.keys, ['a']);
+    expect(again.customChords['a']!.frets, [3, 2, 0, 2, 0, 3]);
+    expect(again.customChords['a']!.fretsText, '3,2,0,2,0,3');
+  });
+
+  test('upgrading a version-2 database adds custom chords and keeps songs', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) => raw
+          ..execute('CREATE TABLE settings (key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)')
+          ..execute(
+            'CREATE TABLE favorite_chords (symbol TEXT NOT NULL PRIMARY KEY, added_at INTEGER NOT NULL)',
+          )
+          ..execute(
+            'CREATE TABLE custom_tunings (id TEXT NOT NULL PRIMARY KEY, name TEXT NOT NULL, '
+            'notes TEXT NOT NULL, position INTEGER NOT NULL)',
+          )
+          ..execute(
+            'CREATE TABLE user_songs (id TEXT NOT NULL PRIMARY KEY, source TEXT NOT NULL, added_at INTEGER NOT NULL)',
+          )
+          ..execute("INSERT INTO user_songs VALUES ('s1', '{title: Kept}', 0)")
+          ..execute('PRAGMA user_version = 2'),
+      ),
+    );
+    addTearDown(db.close);
+    final store = await LocalStore.open(db);
+    expect(store.userSongs, {'s1': '{title: Kept}'});
+    store.putCustomChord('c', const CustomChordData(name: 'Em7', frets: [0, 2, 0, 0, 0, 0]));
+    await store.flushed;
+    expect((await LocalStore.open(db)).customChords.keys, ['c']);
+  });
 }

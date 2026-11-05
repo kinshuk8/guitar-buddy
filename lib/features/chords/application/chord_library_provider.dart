@@ -8,12 +8,50 @@ import 'package:fretlight/features/chords/domain/chord_library.dart';
 
 /// The bundled library (~260 KB of JSON, 3,000+ voicings), parsed off the
 /// UI isolate so opening the Chords tab never drops a frame.
-final chordLibraryProvider = FutureProvider<ChordLibrary>((ref) async {
+final bundledChordLibraryProvider = FutureProvider<ChordLibrary>((ref) async {
   final json = await rootBundle.loadString('assets/chords/guitar.json');
   return await Isolate.run(
     () => ChordLibrary.fromJson((jsonDecode(json) as Map).cast<String, Object?>()),
   );
 });
+
+/// The library as the app uses it: bundled shapes plus the user's own.
+final chordLibraryProvider = FutureProvider<ChordLibrary>((ref) async {
+  final base = await ref.watch(bundledChordLibraryProvider.future);
+  final custom = ref.watch(customChordsProvider);
+  return base.withCustom({
+    for (final MapEntry(:key, :value) in custom.entries)
+      key: (name: value.name, frets: value.frets),
+  });
+});
+
+/// The user's chord shapes, saved on the phone.
+final customChordsProvider = NotifierProvider<CustomChordsController, Map<String, CustomChordData>>(
+  CustomChordsController.new,
+);
+
+final class CustomChordsController extends Notifier<Map<String, CustomChordData>> {
+  late LocalStore _store;
+
+  @override
+  Map<String, CustomChordData> build() {
+    _store = ref.watch(localStoreProvider);
+    return _store.customChords;
+  }
+
+  /// Saves a shape (new, or replacing [id]). Returns its id.
+  String save(String name, List<int?> frets, {String? id}) {
+    final key = id ?? 'chord_${DateTime.now().microsecondsSinceEpoch}';
+    _store.putCustomChord(key, CustomChordData(name: name.trim(), frets: frets));
+    state = _store.customChords;
+    return key;
+  }
+
+  void delete(String id) {
+    _store.deleteCustomChord(id);
+    state = _store.customChords;
+  }
+}
 
 /// Starred chord symbols, newest last.
 final favoritesProvider = NotifierProvider<FavoritesController, Set<String>>(

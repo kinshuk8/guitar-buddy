@@ -33,7 +33,7 @@ final class TestDevices {
     audioInputProvider.overrideWithValue(mic),
     audioOutputProvider.overrideWithValue(speaker),
     localStoreProvider.overrideWithValue(store),
-    if (library case final lib?) chordLibraryProvider.overrideWith((ref) async => lib),
+    if (library case final lib?) bundledChordLibraryProvider.overrideWith((ref) async => lib),
     // Read from disk: rootBundle's cache only works for a file's first test.
     progressionPackProvider.overrideWith(
       (ref) async => ProgressionPack.openFile(ProgressionPack.asset),

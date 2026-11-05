@@ -68,4 +68,31 @@ void main() {
     expect(PracticeSession.judge(c('G'), c('Em')), Verdict.miss);
     expect(PracticeSession.judge(c('C'), c('C#')), Verdict.miss);
   });
+
+  test('knowing the target: a near-top candidate counts, noise far from it is ignored', () {
+    final s = PracticeSession([c('C'), c('G')]);
+    // The identifier's top answer is Am, but C is within a hair of it.
+    expect(
+      s.hear(
+        ChordReading(
+          chord: c('Am'),
+          confidence: 0.7,
+          strum: 1,
+          candidates: [(chord: c('Am'), score: 0.93), (chord: c('C'), score: 0.915)],
+        ),
+      ),
+      Verdict.hit,
+    );
+    // An unnamed sound whose best guesses are nowhere near G: not judged.
+    expect(
+      s.hear(
+        ChordReading(
+          strum: 2,
+          candidates: [(chord: c('F#m'), score: 0.8), (chord: c('Bb'), score: 0.79)],
+        ),
+      ),
+      isNull,
+    );
+    expect(s.index, 1);
+  });
 }

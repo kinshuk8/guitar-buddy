@@ -898,6 +898,286 @@ class UserSongsCompanion extends UpdateCompanion<UserSong> {
   }
 }
 
+class $CustomChordsTable extends CustomChords with TableInfo<$CustomChordsTable, CustomChord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CustomChordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fretsMeta = const VerificationMeta('frets');
+  @override
+  late final GeneratedColumn<String> frets = GeneratedColumn<String>(
+    'frets',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _addedAtMeta = const VerificationMeta('addedAt');
+  @override
+  late final GeneratedColumn<DateTime> addedAt = GeneratedColumn<DateTime>(
+    'added_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, frets, addedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'custom_chords';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CustomChord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(_nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('frets')) {
+      context.handle(_fretsMeta, frets.isAcceptableOrUnknown(data['frets']!, _fretsMeta));
+    } else if (isInserting) {
+      context.missing(_fretsMeta);
+    }
+    if (data.containsKey('added_at')) {
+      context.handle(_addedAtMeta, addedAt.isAcceptableOrUnknown(data['added_at']!, _addedAtMeta));
+    } else if (isInserting) {
+      context.missing(_addedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CustomChord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CustomChord(
+      id: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      frets: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}frets'],
+      )!,
+      addedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}added_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CustomChordsTable createAlias(String alias) {
+    return $CustomChordsTable(attachedDatabase, alias);
+  }
+}
+
+class CustomChord extends DataClass implements Insertable<CustomChord> {
+  final String id;
+  final String name;
+  final String frets;
+  final DateTime addedAt;
+  const CustomChord({
+    required this.id,
+    required this.name,
+    required this.frets,
+    required this.addedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['frets'] = Variable<String>(frets);
+    map['added_at'] = Variable<DateTime>(addedAt);
+    return map;
+  }
+
+  CustomChordsCompanion toCompanion(bool nullToAbsent) {
+    return CustomChordsCompanion(
+      id: Value(id),
+      name: Value(name),
+      frets: Value(frets),
+      addedAt: Value(addedAt),
+    );
+  }
+
+  factory CustomChord.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CustomChord(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      frets: serializer.fromJson<String>(json['frets']),
+      addedAt: serializer.fromJson<DateTime>(json['addedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'frets': serializer.toJson<String>(frets),
+      'addedAt': serializer.toJson<DateTime>(addedAt),
+    };
+  }
+
+  CustomChord copyWith({String? id, String? name, String? frets, DateTime? addedAt}) => CustomChord(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    frets: frets ?? this.frets,
+    addedAt: addedAt ?? this.addedAt,
+  );
+  CustomChord copyWithCompanion(CustomChordsCompanion data) {
+    return CustomChord(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      frets: data.frets.present ? data.frets.value : this.frets,
+      addedAt: data.addedAt.present ? data.addedAt.value : this.addedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CustomChord(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('frets: $frets, ')
+          ..write('addedAt: $addedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, frets, addedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CustomChord &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.frets == this.frets &&
+          other.addedAt == this.addedAt);
+}
+
+class CustomChordsCompanion extends UpdateCompanion<CustomChord> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> frets;
+  final Value<DateTime> addedAt;
+  final Value<int> rowid;
+  const CustomChordsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.frets = const Value.absent(),
+    this.addedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CustomChordsCompanion.insert({
+    required String id,
+    required String name,
+    required String frets,
+    required DateTime addedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       frets = Value(frets),
+       addedAt = Value(addedAt);
+  static Insertable<CustomChord> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? frets,
+    Expression<DateTime>? addedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (frets != null) 'frets': frets,
+      if (addedAt != null) 'added_at': addedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CustomChordsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? frets,
+    Value<DateTime>? addedAt,
+    Value<int>? rowid,
+  }) {
+    return CustomChordsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      frets: frets ?? this.frets,
+      addedAt: addedAt ?? this.addedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (frets.present) {
+      map['frets'] = Variable<String>(frets.value);
+    }
+    if (addedAt.present) {
+      map['added_at'] = Variable<DateTime>(addedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CustomChordsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('frets: $frets, ')
+          ..write('addedAt: $addedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -905,6 +1185,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $FavoriteChordsTable favoriteChords = $FavoriteChordsTable(this);
   late final $CustomTuningsTable customTunings = $CustomTuningsTable(this);
   late final $UserSongsTable userSongs = $UserSongsTable(this);
+  late final $CustomChordsTable customChords = $CustomChordsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -914,6 +1195,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     favoriteChords,
     customTunings,
     userSongs,
+    customChords,
   ];
 }
 
@@ -1442,6 +1724,163 @@ typedef $$UserSongsTableProcessedTableManager =
       UserSong,
       PrefetchHooks Function()
     >;
+typedef $$CustomChordsTableCreateCompanionBuilder = CustomChordsCompanion Function({
+  required String id,
+  required String name,
+  required String frets,
+  required DateTime addedAt,
+  Value<int> rowid,
+});
+typedef $$CustomChordsTableUpdateCompanionBuilder = CustomChordsCompanion Function({
+  Value<String> id,
+  Value<String> name,
+  Value<String> frets,
+  Value<DateTime> addedAt,
+  Value<int> rowid,
+});
+
+class $$CustomChordsTableFilterComposer extends Composer<_$AppDatabase, $CustomChordsTable> {
+  $$CustomChordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get frets =>
+      $composableBuilder(column: $table.frets, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get addedAt =>
+      $composableBuilder(column: $table.addedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$CustomChordsTableOrderingComposer extends Composer<_$AppDatabase, $CustomChordsTable> {
+  $$CustomChordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get frets =>
+      $composableBuilder(column: $table.frets, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get addedAt =>
+      $composableBuilder(column: $table.addedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$CustomChordsTableAnnotationComposer extends Composer<_$AppDatabase, $CustomChordsTable> {
+  $$CustomChordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get frets =>
+      $composableBuilder(column: $table.frets, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get addedAt =>
+      $composableBuilder(column: $table.addedAt, builder: (column) => column);
+}
+
+class $$CustomChordsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CustomChordsTable,
+          CustomChord,
+          $$CustomChordsTableFilterComposer,
+          $$CustomChordsTableOrderingComposer,
+          $$CustomChordsTableAnnotationComposer,
+          $$CustomChordsTableCreateCompanionBuilder,
+          $$CustomChordsTableUpdateCompanionBuilder,
+          (CustomChord, BaseReferences<_$AppDatabase, $CustomChordsTable, CustomChord>),
+          CustomChord,
+          PrefetchHooks Function()
+        > {
+  $$CustomChordsTableTableManager(_$AppDatabase db, $CustomChordsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () => $$CustomChordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$CustomChordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CustomChordsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> frets = const Value.absent(),
+                Value<DateTime> addedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CustomChordsCompanion(
+                id: id,
+                name: name,
+                frets: frets,
+                addedAt: addedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required String frets,
+                required DateTime addedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => CustomChordsCompanion.insert(
+                id: id,
+                name: name,
+                frets: frets,
+                addedAt: addedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CustomChordsTable, CustomChord>(table),
+                  BaseReferences<_$AppDatabase, $CustomChordsTable, CustomChord>(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CustomChordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CustomChordsTable,
+      CustomChord,
+      $$CustomChordsTableFilterComposer,
+      $$CustomChordsTableOrderingComposer,
+      $$CustomChordsTableAnnotationComposer,
+      $$CustomChordsTableCreateCompanionBuilder,
+      $$CustomChordsTableUpdateCompanionBuilder,
+      (CustomChord, BaseReferences<_$AppDatabase, $CustomChordsTable, CustomChord>),
+      CustomChord,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1452,4 +1891,6 @@ class $AppDatabaseManager {
   $$CustomTuningsTableTableManager get customTunings =>
       $$CustomTuningsTableTableManager(_db, _db.customTunings);
   $$UserSongsTableTableManager get userSongs => $$UserSongsTableTableManager(_db, _db.userSongs);
+  $$CustomChordsTableTableManager get customChords =>
+      $$CustomChordsTableTableManager(_db, _db.customChords);
 }

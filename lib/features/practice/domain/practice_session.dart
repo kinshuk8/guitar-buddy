@@ -1,3 +1,4 @@
+import 'package:fretlight/core/audio/dsp/chord_detector.dart' show ChordScore;
 import 'package:fretlight/core/music/music.dart';
 import 'package:fretlight/features/identify/domain/chord_smoother.dart';
 import 'package:meta/meta.dart';
@@ -69,10 +70,20 @@ final class PracticeSession {
   /// reading was a new strum that got judged.
   Verdict? hear(ChordReading reading) {
     final target = current;
-    final heard = reading.chord;
-    if (target == null || heard == null || reading.fading || !reading.settled) return null;
+    if (target == null || reading.fading || !reading.settled) return null;
     if (reading.strum <= _lastJudgedStrum) return null;
-    final verdict = judge(target, heard);
+    final heard = reading.chord ?? reading.candidates.firstOrNull?.chord;
+    if (heard == null) return null;
+    var verdict = judge(target, heard);
+    if (verdict == Verdict.miss && closeEnough(target, reading.candidates)) {
+      // Not the identifier's top answer, but within a hair of it: with the
+      // target known, that's the chord you played (real guitars and phone
+      // mics blur the top few candidates together).
+      verdict = Verdict.hit;
+    }
+    // A strum the identifier couldn't name at all, and nowhere near the
+    // target, isn't judged: better to keep listening than to scold noise.
+    if (reading.chord == null && verdict == Verdict.miss) return null;
     // A wrong chord needs real confidence before it counts against you;
     // a right one only needs to be the identifier's answer.
     if (verdict == Verdict.miss && reading.confidence < 0.6) return null;
@@ -99,6 +110,16 @@ final class PracticeSession {
     );
     _missesHere = 0;
     _index++;
+  }
+
+  /// Whether [target] (or the same chord give or take a note) scores within
+  /// [margin] of the best candidate.
+  static bool closeEnough(Chord target, List<ChordScore> candidates, {double margin = 0.03}) {
+    if (candidates.isEmpty) return false;
+    final best = candidates.first.score;
+    return candidates.any(
+      (c) => c.score >= best - margin && judge(target, c.chord) != Verdict.miss,
+    );
   }
 
   static Verdict judge(Chord target, Chord heard) {

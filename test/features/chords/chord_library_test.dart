@@ -106,4 +106,31 @@ void main() {
       expect(library.search('   '), isEmpty);
     });
   });
+
+  group('your own shapes', () {
+    test('a shape named like a chord joins it, first; a new one gets an entry', () {
+      final mine = library.withCustom({
+        'a': (name: 'G', frets: [3, 2, 0, 0, 3, 3]),
+        'b': (
+          name: 'whatever',
+          frets: [null, 0, 2, 2, 1, 3],
+        ), // notes say Am(add b6)? named from notes
+        'c': (name: 'Cadd9', frets: [null, 3, 2, 0, 3, 0]),
+      });
+      final g = mine.bySymbol('G')!;
+      expect(g.voicings.first.frets, [3, 2, 0, 0, 3, 3]);
+      expect(g.customIds, {0: 'a'});
+      expect(g.voicings.length, library.bySymbol('G')!.voicings.length + 1);
+      expect(mine.bySymbol('Cadd9')!.customIds, {0: 'c'});
+      expect(mine.custom.map((e) => e.symbol), containsAll(['G', 'Cadd9']));
+      expect(library.custom, isEmpty, reason: 'the bundled library is unchanged');
+    });
+
+    test('an unnamed shape is named from its notes', () {
+      final mine = library.withCustom({
+        'x': (name: 'my shape', frets: [0, 2, 2, 0, 0, 0]),
+      });
+      expect(mine.byChord(Chord.parse('Em'))!.customIds.values, ['x']);
+    });
+  });
 }

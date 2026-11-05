@@ -171,6 +171,11 @@ void main() {
         expect(song.warnings, isEmpty, reason: song.warnings.join('\n'));
         expect(song.title, isNot('Untitled'));
         expect(song.meta['public_domain'], isNotEmpty, reason: 'records its public-domain basis');
+        expect(
+          song.meta['source'],
+          isNotEmpty,
+          reason: 'names the pre-1929 publication its words follow',
+        );
         expect(song.key, isNotNull);
         expect(song.tempo, isNotNull);
         for (final c in song.chords) {

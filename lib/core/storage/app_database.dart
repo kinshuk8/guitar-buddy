@@ -45,7 +45,19 @@ class UserSongs extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [Settings, FavoriteChords, CustomTunings, UserSongs])
+/// Chord shapes the user drew. [frets] is comma-separated, lowest string
+/// first, `x` for muted (`x,3,2,0,1,0`).
+class CustomChords extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get frets => text()();
+  DateTimeColumn get addedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+@DriftDatabase(tables: [Settings, FavoriteChords, CustomTunings, UserSongs, CustomChords])
 final class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
@@ -59,14 +71,16 @@ final class AppDatabase extends _$AppDatabase {
   );
 
   /// 1: settings, favourites, custom tunings (M3). 2: user songs (M6).
+  /// 3: custom chords.
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
       if (from < 2) await m.createTable(userSongs);
+      if (from < 3) await m.createTable(customChords);
     },
   );
 }

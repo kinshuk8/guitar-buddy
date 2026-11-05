@@ -7,9 +7,12 @@ import 'package:fretlight/core/audio/engine/dsp_worker.dart';
 import 'package:fretlight/core/audio/input/audio_input_source.dart';
 import 'package:fretlight/core/audio/input/mic_lifecycle.dart';
 import 'package:fretlight/core/audio/input/shared_mic.dart';
+import 'package:fretlight/core/audio/listening.dart';
 import 'package:fretlight/core/music/music.dart';
+import 'package:fretlight/core/widgets/mic_level.dart';
 import 'package:fretlight/features/identify/domain/chord_smoother.dart';
 import 'package:fretlight/features/practice/domain/practice_session.dart';
+import 'package:fretlight/features/settings/application/sensitivity.dart';
 
 /// What to practise, as handed to the practice screen.
 @immutable
@@ -135,10 +138,12 @@ final class PracticeController extends Notifier<PracticeState> {
     );
     worker.reset();
     final detector = ChromaChordDetector(sampleRate: description.sampleRate);
-    final smoother = _smoother = ChordSmoother(
-      hopSeconds: detector.windowSize / 4 / description.sampleRate,
-    );
+    final hop = detector.windowSize / 4 / description.sampleRate;
+    final floor = NoiseFloor(marginDb: ref.read(sensitivityProvider).marginDb, frameSeconds: hop);
+    final level = ref.read(micLevelProvider.notifier);
+    final smoother = _smoother = ChordSmoother(hopSeconds: hop, floor: floor);
     _chords = worker.chordFrames.listen((e) {
+      level.report(e.rmsDb, floor.gateDb);
       final reading = smoother.update(e);
       final session = state.session;
       if (reading == null || session == null || session.done) return;
@@ -152,6 +157,7 @@ final class PracticeController extends Notifier<PracticeState> {
   }
 
   Future<void> _onStop() async {
+    if (ref.mounted) ref.read(micLevelProvider.notifier).clear();
     await _pcm?.cancel();
     await _chords?.cancel();
     _pcm = null;

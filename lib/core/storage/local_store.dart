@@ -14,7 +14,7 @@ import 'package:fretlight/core/storage/app_database.dart';
 /// background; a failed write is logged and the in-memory value still holds
 /// for this session.
 final class LocalStore {
-  LocalStore._(this._db, this._settings, this._favorites, this._tunings, this._songs);
+  LocalStore._(this._db, this._settings, this._favorites, this._tunings, this._songs, this._chords);
 
   /// Store with no database, for tests and previews.
   LocalStore.memory({
@@ -22,7 +22,10 @@ final class LocalStore {
     Set<String>? favorites,
     List<Tuning>? customTunings,
     Map<String, String>? userSongs,
-  }) : this._(null, {...?settings}, {...?favorites}, [...?customTunings], {...?userSongs});
+    Map<String, CustomChordData>? customChords,
+  }) : this._(null, {...?settings}, {...?favorites}, [...?customTunings], {...?userSongs}, {
+         ...?customChords,
+       });
 
   static Future<LocalStore> open(AppDatabase db) async {
     final settings = await db.select(db.settings).get();
@@ -35,12 +38,16 @@ final class LocalStore {
     final songs = await (db.select(
       db.userSongs,
     )..orderBy([(s) => OrderingTerm.asc(s.addedAt)])).get();
+    final chords = await (db.select(
+      db.customChords,
+    )..orderBy([(c) => OrderingTerm.asc(c.addedAt)])).get();
     return LocalStore._(
       db,
       {for (final s in settings) s.key: s.value},
       {for (final f in favorites) f.symbol},
       [for (final t in tunings) ?_tuningFromRow(t)],
       {for (final s in songs) s.id: s.source},
+      {for (final c in chords) c.id: ?CustomChordData.tryParse(c.name, c.frets)},
     );
   }
 
@@ -51,6 +58,32 @@ final class LocalStore {
 
   /// User songs: id → ChordPro source, oldest first.
   final Map<String, String> _songs;
+
+  /// User chord shapes, oldest first.
+  final Map<String, CustomChordData> _chords;
+
+  Map<String, CustomChordData> get customChords => Map.unmodifiable(_chords);
+
+  void putCustomChord(String id, CustomChordData chord) {
+    _chords[id] = chord;
+    _write(
+      (db) => db
+          .into(db.customChords)
+          .insertOnConflictUpdate(
+            CustomChordsCompanion.insert(
+              id: id,
+              name: chord.name,
+              frets: chord.fretsText,
+              addedAt: DateTime.now(),
+            ),
+          ),
+    );
+  }
+
+  void deleteCustomChord(String id) {
+    if (_chords.remove(id) == null) return;
+    _write((db) => (db.delete(db.customChords)..where((c) => c.id.equals(id))).go());
+  }
 
   /// Completes when every write issued so far has finished (for tests).
   Future<void> get flushed => _writes;
@@ -156,3 +189,33 @@ final class LocalStore {
 final localStoreProvider = Provider<LocalStore>(
   (ref) => throw UnimplementedError('localStoreProvider must be overridden'),
 );
+
+/// A chord shape the user drew.
+@immutable
+final class CustomChordData {
+  const CustomChordData({required this.name, required this.frets});
+
+  /// What the user called it (normally a chord symbol like `Gadd9`).
+  final String name;
+
+  /// Lowest string first; null = muted.
+  final List<int?> frets;
+
+  String get fretsText => frets.map((f) => f?.toString() ?? 'x').join(',');
+
+  static CustomChordData? tryParse(String name, String frets) {
+    final parts = frets.split(',');
+    if (parts.length != 6) return null;
+    final parsed = <int?>[];
+    for (final p in parts) {
+      if (p == 'x') {
+        parsed.add(null);
+      } else {
+        final f = int.tryParse(p);
+        if (f == null || f < 0 || f > 24) return null;
+        parsed.add(f);
+      }
+    }
+    return CustomChordData(name: name, frets: parsed);
+  }
+}

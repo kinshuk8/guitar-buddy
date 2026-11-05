@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fretlight/core/audio/dsp/chord_detector.dart';
 import 'package:fretlight/core/audio/dsp/chord_tracker.dart';
+import 'package:fretlight/core/audio/listening.dart';
 import 'package:fretlight/core/audio/synth/strum.dart';
 import 'package:fretlight/core/audio/synth/test_signals.dart';
 import 'package:fretlight/core/audio/wav.dart';
@@ -33,10 +34,15 @@ Float32List strum(Voicing v, {double detune = 0, double? snrDb, int seed = 1}) {
 }
 
 /// Smoothed readings for every hop of [pcm], with their times.
-List<(double, ChordReading?)> run(Float32List pcm) {
+List<(double, ChordReading?)> run(Float32List pcm, {Sensitivity? sensitivity}) {
   final det = ChromaChordDetector(sampleRate: sr);
   final tracker = ChordTracker(detector: det);
-  final smoother = ChordSmoother(hopSeconds: tracker.hopSeconds(sr));
+  final smoother = ChordSmoother(
+    hopSeconds: tracker.hopSeconds(sr),
+    floor: sensitivity == null
+        ? null
+        : NoiseFloor(marginDb: sensitivity.marginDb, frameSeconds: tracker.hopSeconds(sr)),
+  );
   final out = <(double, ChordReading?)>[];
   var t = det.windowSize / sr;
   for (final e in tracker.push(pcm)) {
@@ -212,4 +218,44 @@ void main() {
     // ignore: avoid_print
     print(report);
   }, skip: files.isEmpty ? 'No chord recordings in test/fixtures/wav yet' : false);
+
+  test('a quiet strum across a room still names the chord (room-relative gate)', () {
+    // A phone in raw-mic mode a metre or two from the guitar: peaks around
+    // -32 dBFS (the old fixed -45 dB RMS gate rejected most of this), over
+    // a -62 dB room hiss that the noise floor has to learn first.
+    final rnd = math.Random(4);
+    final report = StringBuffer('\n== Quiet strums, room noise at -62 dB ==\n');
+    var worst = 1.0;
+    for (final sym in required) {
+      final v = library.bySymbol(sym)!.voicings.first;
+      final strummed = strum(v);
+      final quiet = Float32List(sr + strummed.length);
+      for (var i = 0; i < quiet.length; i++) {
+        final s = i >= sr ? strummed[i - sr] * 0.03 : 0.0;
+        quiet[i] = s + (rnd.nextDouble() * 2 - 1) * 0.0014;
+      }
+      final frames = run(quiet, sensitivity: Sensitivity.normal);
+      final shifted = [
+        for (final (t, r) in frames)
+          if (t >= 1.4) (t - 1, r),
+      ];
+      final s = score(shifted, library.bySymbol(sym)!.chord);
+      worst = math.min(worst, s.hit);
+      report.writeln('${sym.padRight(4)} ${(s.hit * 100).toStringAsFixed(0)}%');
+    }
+    // Printed on purpose: part of the accuracy report.
+    // ignore: avoid_print
+    print(report);
+    expect(worst, greaterThan(0.85));
+  });
+
+  test('the room-relative gate ignores the room itself', () {
+    final rnd = math.Random(5);
+    final hiss = Float32List.fromList([
+      for (var i = 0; i < sr * 4; i++) (rnd.nextDouble() * 2 - 1) * 0.0014,
+    ]);
+    for (final s in Sensitivity.values) {
+      expect(run(hiss, sensitivity: s).where((f) => f.$2 != null), isEmpty, reason: s.name);
+    }
+  });
 }

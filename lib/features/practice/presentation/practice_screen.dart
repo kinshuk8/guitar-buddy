@@ -11,6 +11,7 @@ import 'package:fretlight/core/painting/chord_diagram.dart';
 import 'package:fretlight/core/widgets/glass.dart';
 import 'package:fretlight/core/widgets/glass_controls.dart';
 import 'package:fretlight/core/widgets/listening.dart';
+import 'package:fretlight/core/widgets/mic_level.dart';
 import 'package:fretlight/core/widgets/music_text.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
 import 'package:fretlight/features/chords/application/chord_library_provider.dart';
@@ -104,6 +105,8 @@ class PracticeScreen extends ConsumerWidget {
                       _ => _Step(state: state, plan: plan, session: session),
                     },
                   ),
+                  const MicLevelMeter(),
+                  const SizedBox(height: Space.xs),
                   Text(
                     'Made for one guitar in a quiet room',
                     style: t.caption.copyWith(color: c.textTertiary, fontSize: TypeScale.micro),

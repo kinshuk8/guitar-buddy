@@ -9,6 +9,7 @@ import 'package:fretlight/core/design/tokens.dart';
 import 'package:fretlight/core/music/music.dart';
 import 'package:fretlight/core/widgets/glass_controls.dart';
 import 'package:fretlight/core/widgets/listening.dart';
+import 'package:fretlight/core/widgets/mic_level.dart';
 import 'package:fretlight/core/widgets/music_text.dart';
 import 'package:fretlight/features/tuner/application/tuner_controller.dart';
 import 'package:fretlight/features/tuner/domain/tuner_session.dart';
@@ -65,6 +66,10 @@ class _TunerScreenState extends ConsumerState<TunerScreen> {
                   ),
                   _ => const _Live(),
                 },
+              ),
+              const Padding(
+                padding: EdgeInsets.only(bottom: Space.sm),
+                child: MicLevelMeter(),
               ),
               if (status == TunerStatus.interrupted)
                 Padding(

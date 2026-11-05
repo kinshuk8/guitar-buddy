@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fretlight/app/version.dart';
+import 'package:fretlight/core/audio/listening.dart';
 import 'package:fretlight/core/design/theme.dart';
 import 'package:fretlight/core/design/tokens.dart';
 import 'package:fretlight/core/widgets/glass.dart';
@@ -8,6 +9,7 @@ import 'package:fretlight/core/widgets/glass_controls.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
 import 'package:fretlight/features/progressions/data/progression_pack.dart';
 import 'package:fretlight/features/settings/application/appearance.dart';
+import 'package:fretlight/features/settings/application/sensitivity.dart';
 import 'package:go_router/go_router.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -20,6 +22,7 @@ class SettingsScreen extends ConsumerWidget {
     final appearance = ref.watch(appearanceProvider);
     final controller = ref.read(appearanceProvider.notifier);
     final pack = ref.watch(progressionPackProvider).value;
+    final sensitivity = ref.watch(sensitivityProvider);
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: AmbientBackground(
@@ -55,6 +58,19 @@ class SettingsScreen extends ConsumerWidget {
                 detail: 'Mirror chord diagrams and the fretboard.',
                 value: appearance.leftHanded,
                 onChanged: (v) => controller.setLeftHanded(value: v),
+              ),
+              const SectionLabel('Listening'),
+              StageSegmented<Sensitivity>(
+                options: Sensitivity.values,
+                selected: sensitivity,
+                labelOf: (s) => s.label,
+                onChanged: ref.read(sensitivityProvider.notifier).set,
+              ),
+              const SizedBox(height: Space.sm),
+              Text(
+                '${sensitivity.help} The meter on the Tune, Identify and Practice screens shows '
+                'whether the microphone hears you: the line is where it starts listening.',
+                style: t.caption.copyWith(color: c.textTertiary),
               ),
               const SectionLabel('Privacy'),
               Text(

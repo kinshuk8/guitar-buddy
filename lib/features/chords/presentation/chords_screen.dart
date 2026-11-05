@@ -13,6 +13,7 @@ import 'package:fretlight/core/widgets/glass_controls.dart';
 import 'package:fretlight/core/widgets/music_text.dart';
 import 'package:fretlight/features/chords/application/chord_library_provider.dart';
 import 'package:fretlight/features/chords/domain/chord_library.dart';
+import 'package:fretlight/features/chords/presentation/chord_editor.dart';
 import 'package:fretlight/features/settings/application/appearance.dart';
 import 'package:go_router/go_router.dart';
 
@@ -66,6 +67,12 @@ class _ChordsScreenState extends ConsumerState<ChordsScreen> {
                   Expanded(
                     child: Semantics(header: true, child: Text('Chords', style: text.display)),
                   ),
+                  GlassIconButton(
+                    icon: Icons.add_rounded,
+                    semantics: 'Draw your own chord',
+                    onTap: () => showChordEditor(context),
+                  ),
+                  const SizedBox(width: Space.sm),
                   GlassPill(
                     label: '',
                     icon: _favoritesOnly ? Icons.favorite_rounded : Icons.favorite_border_rounded,
@@ -118,7 +125,15 @@ class _ChordsScreenState extends ConsumerState<ChordsScreen> {
     }
     final root = PitchClass(ref.watch(browseRootProvider));
     final groups = library.browse(root);
+    final yours = library.custom;
     return [
+      if (yours.isNotEmpty) ...[
+        const SliverPadding(
+          padding: EdgeInsets.symmetric(horizontal: Space.gutter),
+          sliver: SliverToBoxAdapter(child: SectionLabel('Your chords')),
+        ),
+        _grid(yours),
+      ],
       SliverPadding(
         padding: const EdgeInsets.only(top: Space.lg),
         sliver: SliverToBoxAdapter(

@@ -9,13 +9,17 @@ import 'package:fretlight/core/design/tokens.dart';
 import 'package:fretlight/core/music/music.dart';
 import 'package:fretlight/core/painting/chord_diagram.dart';
 import 'package:fretlight/core/painting/fretboard.dart';
+import 'package:fretlight/core/widgets/glass.dart';
 import 'package:fretlight/core/widgets/glass_controls.dart';
 import 'package:fretlight/core/widgets/music_text.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
 import 'package:fretlight/features/chords/application/chord_library_provider.dart';
 import 'package:fretlight/features/chords/application/chord_player.dart';
 import 'package:fretlight/features/chords/domain/chord_library.dart';
+import 'package:fretlight/features/chords/presentation/chord_editor.dart';
 import 'package:fretlight/features/chords/presentation/chords_screen.dart';
+import 'package:fretlight/features/practice/application/practice_controller.dart';
+import 'package:fretlight/features/practice/presentation/practice_screen.dart';
 import 'package:fretlight/features/settings/application/appearance.dart';
 import 'package:go_router/go_router.dart';
 
@@ -67,6 +71,61 @@ class _DetailState extends ConsumerState<_Detail> {
     unawaited(HapticFeedback.selectionClick());
     setState(() => _index = next);
   }
+
+  /// Practise this chord alone, or switching to and from another one:
+  /// the change is usually the hard part.
+  Future<void> _showPracticeSheet(BuildContext context) => showGlassSheet<void>(
+    context,
+    builder: (sheet) {
+      final t = sheet.stageText;
+      final c = sheet.stage;
+      final favorites = ref.read(favoritesProvider);
+      final library = ref.read(chordLibraryProvider).value;
+      final partners = <ChordEntry>{
+        for (final s in const ['C', 'G', 'D', 'A', 'E', 'Am', 'Em', 'Dm', 'F'])
+          ?library?.bySymbol(s),
+        for (final s in favorites) ?library?.bySymbol(s),
+      }.where((e) => e.chord != _entry.chord).toList();
+      void go(List<Chord> sounding, String title) {
+        Navigator.of(sheet).pop();
+        startPractice(context, ref, PracticePlan(title: title, sounding: sounding));
+      }
+
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Semantics(header: true, child: Text('Practise ${_entry.symbol}', style: t.title)),
+            const SizedBox(height: Space.lg),
+            StageButton(
+              label: 'Just ${_entry.symbol}, 5 times',
+              expand: true,
+              onPressed: () => go(List.filled(5, _entry.chord), '${_entry.symbol} × 5'),
+            ),
+            const SizedBox(height: Space.lg),
+            Text('Or switch between it and…', style: t.caption.copyWith(color: c.textTertiary)),
+            const SizedBox(height: Space.sm),
+            Wrap(
+              spacing: Space.sm,
+              runSpacing: Space.sm,
+              children: [
+                for (final p in partners)
+                  GlassPill(
+                    label: p.symbol,
+                    semantics: 'Switch between ${_entry.symbol} and ${p.symbol}',
+                    onTap: () => go([
+                      for (var i = 0; i < 6; i++) ...[_entry.chord, p.chord],
+                    ], '${_entry.symbol} ⇄ ${p.symbol}'),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      );
+    },
+  );
 
   void _play() {
     unawaited(HapticFeedback.lightImpact());
@@ -141,8 +200,34 @@ class _DetailState extends ConsumerState<_Detail> {
               ),
               const SizedBox(height: Space.md),
               _ShapeStepper(index: _index, count: count, onStep: _go),
+              if (_entry.customIds[_index] case final id?)
+                Padding(
+                  padding: const EdgeInsets.only(top: Space.xs),
+                  child: GlassPill(
+                    label: 'Your shape · Edit',
+                    icon: Icons.edit_rounded,
+                    semantics: 'Your own shape. Edit it',
+                    onTap: () => showChordEditor(
+                      context,
+                      id: id,
+                      name: ref.read(customChordsProvider)[id]?.name,
+                      frets: _voicing.frets,
+                    ),
+                  ),
+                ),
               const SizedBox(height: Space.lg),
-              StageButton(label: 'Play', icon: Icons.play_arrow_rounded, onPressed: _play),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  StageButton(label: 'Play', icon: Icons.play_arrow_rounded, onPressed: _play),
+                  const SizedBox(width: Space.md),
+                  StageButton.glass(
+                    label: 'Practise',
+                    icon: Icons.hearing_rounded,
+                    onPressed: () => _showPracticeSheet(context),
+                  ),
+                ],
+              ),
               const SizedBox(height: Space.xl),
               _Tones(chord: _entry.chord, spelling: spelling),
               const SizedBox(height: Space.md),

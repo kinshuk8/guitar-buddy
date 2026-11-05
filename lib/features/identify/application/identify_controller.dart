@@ -3,15 +3,19 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fretlight/core/audio/dsp/chord_detector.dart';
+import 'package:fretlight/core/audio/dsp/pitch_detector.dart';
 import 'package:fretlight/core/audio/dsp/pitch_tracker.dart';
 import 'package:fretlight/core/audio/engine/dsp_worker.dart';
 import 'package:fretlight/core/audio/input/audio_input_source.dart';
 import 'package:fretlight/core/audio/input/mic_lifecycle.dart';
 import 'package:fretlight/core/audio/input/shared_mic.dart';
+import 'package:fretlight/core/audio/listening.dart';
 import 'package:fretlight/core/music/music.dart';
 import 'package:fretlight/core/storage/local_store.dart';
+import 'package:fretlight/core/widgets/mic_level.dart';
 import 'package:fretlight/features/identify/domain/chord_smoother.dart';
 import 'package:fretlight/features/identify/domain/note_session.dart';
+import 'package:fretlight/features/settings/application/sensitivity.dart';
 import 'package:fretlight/features/tuner/application/tuner_controller.dart';
 
 enum IdentifyMode { note, chord }
@@ -111,20 +115,36 @@ final class IdentifyController extends Notifier<IdentifyState> {
     final worker = _worker ??= await DspWorker.spawn(sampleRate: rate, chords: true);
     worker.reset();
     final tuner = ref.read(tunerProvider);
+    final sensitivity = ref.read(sensitivityProvider);
+    final level = ref.read(micLevelProvider.notifier);
     final notes = _noteSession = NoteSession(
+      minClarity: sensitivity.noteClarity,
+      floor: NoiseFloor(
+        marginDb: sensitivity.marginDb,
+        frameSeconds: analysisGeometry(rate).hop / rate,
+      ),
       sampleRate: rate,
       math: PitchMath(a4: tuner.a4),
     );
     final detector = ChromaChordDetector(sampleRate: rate);
-    final smoother = _smoother = ChordSmoother(hopSeconds: detector.windowSize / 4 / rate);
+    final chordFloor = NoiseFloor(
+      marginDb: sensitivity.marginDb,
+      frameSeconds: detector.windowSize / 4 / rate,
+    );
+    final smoother = _smoother = ChordSmoother(
+      hopSeconds: detector.windowSize / 4 / rate,
+      floor: chordFloor,
+    );
     _pitch = worker.frames.listen((f) {
       if (state.mode != IdentifyMode.note) return;
+      level.report(f.rmsDb, notes.floor!.gateDb);
       final before = notes.reading;
       final after = notes.update(f);
       if (!identical(before, after)) state = state.copyWith(note: () => after);
     });
     _chords = worker.chordFrames.listen((e) {
       if (state.mode != IdentifyMode.chord) return;
+      level.report(e.rmsDb, chordFloor.gateDb);
       final before = smoother.reading;
       final after = smoother.update(e);
       if (!identical(before, after)) state = state.copyWith(chord: () => after);
@@ -134,6 +154,7 @@ final class IdentifyController extends Notifier<IdentifyState> {
   }
 
   Future<void> _onStop() async {
+    if (ref.mounted) ref.read(micLevelProvider.notifier).clear();
     await _pcm?.cancel();
     await _pitch?.cancel();
     await _chords?.cancel();

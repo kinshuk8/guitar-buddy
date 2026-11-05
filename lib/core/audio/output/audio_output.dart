@@ -33,6 +33,9 @@ abstract interface class AudioOutput {
   /// gapless: the engine wraps from the last sample to the first.
   Future<LoopVoice> scheduleLoop(Uint8List wav, {required Duration at});
 
+  /// Plays [wav] once, starting at engine time [at] (a song's backing).
+  Future<LoopVoice> scheduleOnce(Uint8List wav, {required Duration at});
+
   /// Stops [voice] at engine time [at] (sample-accurate), or cancels it if
   /// it hasn't started by then. A time in the past stops it now.
   void stopLoopAt(LoopVoice voice, Duration at);

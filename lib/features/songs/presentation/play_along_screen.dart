@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'dart:isolate';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fretlight/core/audio/output/audio_output.dart';
+import 'package:fretlight/core/audio/wav.dart';
 import 'package:fretlight/core/design/motion.dart';
 import 'package:fretlight/core/design/theme.dart';
 import 'package:fretlight/core/design/tokens.dart';
@@ -16,10 +20,12 @@ import 'package:fretlight/core/widgets/glass_controls.dart';
 import 'package:fretlight/core/widgets/music_text.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
 import 'package:fretlight/features/chords/application/chord_library_provider.dart';
+import 'package:fretlight/features/chords/application/chord_player.dart';
 import 'package:fretlight/features/practice/application/practice_controller.dart';
 import 'package:fretlight/features/practice/presentation/practice_screen.dart';
 import 'package:fretlight/features/settings/application/appearance.dart';
 import 'package:fretlight/features/songs/application/songs_controller.dart';
+import 'package:fretlight/features/songs/domain/backing.dart';
 import 'package:fretlight/features/songs/domain/chordpro.dart';
 import 'package:fretlight/features/songs/domain/song_timeline.dart';
 import 'package:fretlight/features/songs/presentation/songs_screen.dart';
@@ -75,12 +81,50 @@ class _PlayerState extends ConsumerState<_Player> with SingleTickerProviderState
   bool _playing = false;
   int? _loopSection;
 
+  // ---- Sound: the guitar part, scheduled on the audio engine. ----
+  static const _soundKey = 'songs.sound';
+  static const _patternKey = 'songs.pattern';
+  static const _clickKey = 'songs.click';
+  static const _sampleRate = 48000;
+
+  /// Read once: dispose must stop audio without touching providers.
+  late final AudioOutput _out;
+
+  @override
+  void initState() {
+    super.initState();
+    _out = ref.read(audioOutputProvider);
+  }
+
+  /// Voices playing now: the first pass, and (when looping) the loop.
+  final List<LoopVoice> _voices = [];
+
+  /// Engine time and beat where the audio started; the visuals read the
+  /// engine clock from here, so what you see stays on what you hear.
+  Duration? _audioAt;
+  double _audioBeat = 0;
+
+  /// Bumps on every (re)start so a slow render can't start stale audio.
+  int _audioGen = 0;
+
+  /// The guitar part is being rendered: the song waits for it rather than
+  /// running ahead and jumping back when the sound starts.
+  bool _preparing = false;
+
+  bool get _sound => ref.read(localStoreProvider).setting(_soundKey) != 'false';
+  StrumPattern get _pattern =>
+      StrumPattern.values.asNameMap()[ref.read(localStoreProvider).setting(_patternKey)] ??
+      StrumPattern.bar;
+  bool get _click => ref.read(localStoreProvider).setting(_clickKey) == 'true';
+
   int get _bpm => _prefs.tempo ?? _song.tempo ?? 90;
   Arrangement get _arrangement => _prefs.arrangement;
   (double, double)? get _loop => _loopSection == null ? null : _timeline.sectionSpan(_loopSection!);
 
   @override
   void dispose() {
+    _audioGen++;
+    _stopAudio();
     _ticker.dispose();
     _scroll.dispose();
     _beat.dispose();
@@ -89,6 +133,23 @@ class _PlayerState extends ConsumerState<_Player> with SingleTickerProviderState
   }
 
   void _onTick(Duration elapsed) {
+    final at = _audioAt;
+    if (at != null) {
+      // Sound on: position comes from the audio engine's clock.
+      final clock = _out.clock;
+      var beat = _audioBeat + (clock - at).inMicroseconds / 1e6 * _bpm / 60;
+      if (beat < _audioBeat) beat = _audioBeat; // not started yet
+      final loop = _loop;
+      if (loop != null && beat >= loop.$2) {
+        beat = loop.$1 + (beat - loop.$2) % (loop.$2 - loop.$1);
+      } else if (loop == null && beat >= _timeline.totalBeats) {
+        _pause(atBeat: 0);
+        return;
+      }
+      _beat.value = beat;
+      _sync();
+      return;
+    }
     var beat = _startBeat + elapsed.inMicroseconds / 1e6 * _bpm / 60;
     final loop = _loop;
     if (loop != null && beat >= loop.$2) {
@@ -136,12 +197,123 @@ class _PlayerState extends ConsumerState<_Player> with SingleTickerProviderState
     unawaited(HapticFeedback.lightImpact());
     setState(() => _playing = true);
     _startBeat = _beat.value;
-    _ticker.start();
     unawaited(_setAwake(on: _keepAwake));
+    if (_sound) {
+      unawaited(_startAudio());
+    } else {
+      _ticker.start();
+    }
+  }
+
+  /// Renders the guitar part from the current beat and schedules it. Until
+  /// it starts (a render takes a moment), the visuals run on their own.
+  Future<void> _startAudio() async {
+    _stopAudio();
+    final gen = ++_audioGen;
+    if (_ticker.isActive) _ticker.stop();
+    setState(() => _preparing = true);
+    try {
+      await _renderAndSchedule(gen);
+    } on Object catch (e, st) {
+      // No sound is better than no song: carry on silently.
+      debugPrint('Backing track failed: $e\n$st');
+      _audioAt = null;
+    } finally {
+      if (mounted && gen == _audioGen) {
+        setState(() => _preparing = false);
+        if (_playing && !_ticker.isActive) {
+          _startBeat = _beat.value;
+          _ticker.start();
+        }
+      }
+    }
+  }
+
+  Future<void> _renderAndSchedule(int gen) async {
+    final from = _beat.value;
+    final loop = _loop;
+    final library = await ref.read(chordLibraryProvider.future);
+    final events = [
+      for (final e in _timeline.events)
+        BackingEvent(
+          startBeat: e.startBeat,
+          beats: e.beats,
+          // Sound is the transposed chord; the capo changes shapes, not pitch.
+          frets: e.chord == null
+              ? null
+              : library.byChord(e.chord!.transpose(_arrangement.transpose))?.voicings.first.frets,
+        ),
+    ];
+    final bpm = _bpm.toDouble();
+    final bar = _timeline.beatsPerBar;
+    final pattern = _pattern;
+    final click = _click;
+    final end = loop?.$2 ?? _timeline.totalBeats;
+    Future<Uint8List> render(double a, double b, {required double tail}) => Isolate.run(
+      () => encodeWav16(
+        renderBacking(
+          events: events,
+          beatsPerBar: bar,
+          bpm: bpm,
+          sampleRate: _sampleRate,
+          fromBeat: a,
+          toBeat: b,
+          pattern: pattern,
+          click: click,
+          tailSeconds: tail,
+        ),
+        _sampleRate,
+      ),
+    );
+    final first = await render(from, end, tail: loop == null ? 1.5 : 0);
+    final looped = loop == null ? null : await render(loop.$1, loop.$2, tail: 0);
+    if (!mounted || gen != _audioGen || !_playing) return;
+    final out = _out;
+    // Start a beat-fraction from now; the clock catches the visuals up.
+    final at = out.clock + const Duration(milliseconds: 80);
+    _voices.add(await out.scheduleOnce(first, at: at));
+    if (looped != null) {
+      final firstLen = Duration(microseconds: ((end - from) * 60 / bpm * 1e6).round());
+      _voices.add(await out.scheduleLoop(looped, at: at + firstLen));
+    }
+    if (!mounted || gen != _audioGen) {
+      _stopAudio();
+      return;
+    }
+    _audioAt = at;
+    _audioBeat = from;
+  }
+
+  void _stopAudio() {
+    final out = _out;
+    final now = out.clock;
+    for (final v in _voices) {
+      out.stopLoopAt(v, now);
+    }
+    _voices.clear();
+    _audioAt = null;
+  }
+
+  /// After a change that alters the sound (tempo, key, pattern, position,
+  /// loop): pick up from where we are with the new audio.
+  void _resound() {
+    if (!_playing) return;
+    _audioGen++;
+    _stopAudio();
+    _startBeat = _beat.value;
+    _ticker.stop();
+    if (_sound) {
+      unawaited(_startAudio());
+    } else {
+      _ticker.start();
+    }
   }
 
   void _pause({double? atBeat}) {
     _ticker.stop();
+    _audioGen++;
+    _stopAudio();
+    _preparing = false;
     if (atBeat != null) _beat.value = atBeat;
     setState(() {
       _playing = false;
@@ -152,9 +324,9 @@ class _PlayerState extends ConsumerState<_Player> with SingleTickerProviderState
 
   void _seekTo(double beat) {
     _beat.value = beat;
-    if (_playing) _restartFrom(beat);
     setState(() => _index = _timeline.indexAt(beat));
     _follow();
+    _resound();
   }
 
   void _toggleLoop(int section) {
@@ -162,7 +334,11 @@ class _PlayerState extends ConsumerState<_Player> with SingleTickerProviderState
     if (span == null) return;
     unawaited(HapticFeedback.selectionClick());
     setState(() => _loopSection = _loopSection == section ? null : section);
-    if (_loopSection != null && (_beat.value < span.$1 || _beat.value >= span.$2)) _seekTo(span.$1);
+    if (_loopSection != null && (_beat.value < span.$1 || _beat.value >= span.$2)) {
+      _seekTo(span.$1);
+    } else {
+      _resound();
+    }
   }
 
   void _practise() {
@@ -195,6 +371,27 @@ class _PlayerState extends ConsumerState<_Player> with SingleTickerProviderState
   void _savePrefs(SongPrefs p) {
     setState(() => _prefs = p);
     ref.read(songsProvider.notifier).savePrefs(widget.entry.id, p);
+    _resound();
+  }
+
+  void _setTempo(int bpm) =>
+      _savePrefs(SongPrefs(arrangement: _arrangement, tempo: bpm.clamp(30, 240)));
+
+  void _toggleSound() {
+    final on = !_sound;
+    ref.read(localStoreProvider).setSetting(_soundKey, '$on');
+    setState(() {});
+    if (!_playing) return;
+    if (on) {
+      _resound();
+    } else {
+      _audioGen++;
+      _stopAudio();
+      _startBeat = _beat.value;
+      _ticker
+        ..stop()
+        ..start();
+    }
   }
 
   @override
@@ -259,7 +456,7 @@ class _PlayerState extends ConsumerState<_Player> with SingleTickerProviderState
             Expanded(
               child: SingleChildScrollView(
                 controller: _scroll,
-                padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 320),
+                padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 420),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -293,10 +490,20 @@ class _PlayerState extends ConsumerState<_Player> with SingleTickerProviderState
             next: next,
             playing: _playing,
             loopLabel: _loopSection == null ? null : _song.sections[_loopSection!].displayLabel,
-            onClearLoop: () => setState(() => _loopSection = null),
+            onClearLoop: () {
+              setState(() => _loopSection = null);
+              _resound();
+            },
+            totalBeats: _timeline.totalBeats,
+            onSeek: _seekTo,
+            bpm: _bpm,
+            onTempo: _setTempo,
+            sound: _sound,
+            onToggleSound: _toggleSound,
             shape: (e) => e.chord == null ? null : _arrangement.shape(e.chord!),
             spelling: _arrangement.spelling(_song.key),
             onPlayPause: () => _playing ? _pause() : _play(),
+            preparing: _preparing,
             beat: _beat,
             beatsPerBar: _timeline.beatsPerBar,
           ),
@@ -362,7 +569,35 @@ class _PlayerState extends ConsumerState<_Player> with SingleTickerProviderState
                 label: 'Tempo',
                 value: '$_bpm BPM',
                 onMinus: _bpm > 30 ? () => change(tempo: -4) : null,
-                onPlus: _bpm < 300 ? () => change(tempo: 4) : null,
+                onPlus: _bpm < 240 ? () => change(tempo: 4) : null,
+              ),
+              const SizedBox(height: Space.md),
+              Text('Guitar part', style: t.body),
+              const SizedBox(height: Space.sm),
+              StageSegmented<StrumPattern>(
+                options: StrumPattern.values,
+                selected: _pattern,
+                labelOf: (p) => p.label,
+                onChanged: (p) {
+                  ref.read(localStoreProvider).setSetting(_patternKey, p.name);
+                  setSheet(() {});
+                  _resound();
+                },
+              ),
+              const SizedBox(height: Space.sm),
+              Row(
+                children: [
+                  Expanded(child: Text('Click on every beat', style: t.body)),
+                  Switch.adaptive(
+                    value: _click,
+                    activeTrackColor: c.textSecondary,
+                    onChanged: (v) {
+                      ref.read(localStoreProvider).setSetting(_clickKey, '$v');
+                      setSheet(() {});
+                      _resound();
+                    },
+                  ),
+                ],
               ),
               const SizedBox(height: Space.sm),
               Row(
@@ -600,7 +835,22 @@ class _Dock extends ConsumerWidget {
     required this.onPlayPause,
     required this.beat,
     required this.beatsPerBar,
+    required this.totalBeats,
+    required this.onSeek,
+    required this.bpm,
+    required this.onTempo,
+    required this.sound,
+    required this.onToggleSound,
+    this.preparing = false,
   });
+
+  final bool preparing;
+  final double totalBeats;
+  final ValueChanged<double> onSeek;
+  final int bpm;
+  final ValueChanged<int> onTempo;
+  final bool sound;
+  final VoidCallback onToggleSound;
 
   final SongEvent? current;
   final SongEvent? next;
@@ -670,63 +920,221 @@ class _Dock extends ConsumerWidget {
         GlassPanel(
           blur: true,
           strong: true,
-          padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.lg, Space.md),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.lg, Space.sm),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              chordCard(current, now: true),
-              const SizedBox(width: Space.lg),
-              chordCard(next, now: false),
-              const Spacer(),
-              Column(
-                mainAxisSize: MainAxisSize.min,
+              Row(
                 children: [
-                  Semantics(
-                    button: true,
-                    label: playing ? 'Pause' : 'Play',
-                    excludeSemantics: true,
-                    child: GestureDetector(
-                      onTap: onPlayPause,
-                      child: Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(color: c.primaryFill, shape: BoxShape.circle),
-                        child: Icon(
-                          playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                          size: 34,
-                          color: c.onPrimary,
+                  chordCard(current, now: true),
+                  const SizedBox(width: Space.lg),
+                  chordCard(next, now: false),
+                  const Spacer(),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Semantics(
+                        button: true,
+                        label: playing ? 'Pause' : 'Play',
+                        excludeSemantics: true,
+                        child: GestureDetector(
+                          onTap: onPlayPause,
+                          child: Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(color: c.primaryFill, shape: BoxShape.circle),
+                            child: preparing
+                                ? Padding(
+                                    padding: const EdgeInsets.all(20),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: c.onPrimary,
+                                    ),
+                                  )
+                                : Icon(
+                                    playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                    size: 34,
+                                    color: c.onPrimary,
+                                  ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: Space.sm),
-                  // Beat within the bar: a quiet pulse to count along to.
-                  ValueListenableBuilder<double>(
-                    valueListenable: beat,
-                    builder: (context, b, _) {
-                      final within = b % beatsPerBar;
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (var i = 0; i < beatsPerBar; i++)
-                            Container(
-                              width: 6,
-                              height: 6,
-                              margin: const EdgeInsets.symmetric(horizontal: 2),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: playing && within.floor() == i ? c.accent : c.glassBorder,
-                              ),
-                            ),
-                        ],
-                      );
-                    },
+                      const SizedBox(height: Space.sm),
+                      // Beat within the bar: a quiet pulse to count along to.
+                      ValueListenableBuilder<double>(
+                        valueListenable: beat,
+                        builder: (context, b, _) {
+                          final within = b % beatsPerBar;
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              for (var i = 0; i < beatsPerBar; i++)
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: playing && within.floor() == i
+                                        ? c.accent
+                                        : c.glassBorder,
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ],
+              ),
+              const SizedBox(height: Space.sm),
+              _Sliders(
+                beat: beat,
+                beatsPerBar: beatsPerBar,
+                totalBeats: totalBeats,
+                onSeek: onSeek,
+                bpm: bpm,
+                onTempo: onTempo,
+                sound: sound,
+                onToggleSound: onToggleSound,
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Where you are in the song, and how fast it goes: both always in reach.
+class _Sliders extends StatefulWidget {
+  const _Sliders({
+    required this.beat,
+    required this.beatsPerBar,
+    required this.totalBeats,
+    required this.onSeek,
+    required this.bpm,
+    required this.onTempo,
+    required this.sound,
+    required this.onToggleSound,
+  });
+
+  final ValueListenable<double> beat;
+  final int beatsPerBar;
+  final double totalBeats;
+  final ValueChanged<double> onSeek;
+  final int bpm;
+  final ValueChanged<int> onTempo;
+  final bool sound;
+  final VoidCallback onToggleSound;
+
+  @override
+  State<_Sliders> createState() => _SlidersState();
+}
+
+class _SlidersState extends State<_Sliders> {
+  /// While dragging, the thumb follows the finger; the song jumps on release.
+  double? _dragBeat;
+  double? _dragBpm;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.stage;
+    final t = context.stageText;
+    final theme = SliderThemeData(
+      trackHeight: 3,
+      activeTrackColor: c.textSecondary,
+      inactiveTrackColor: c.glassBorder,
+      thumbColor: c.primaryFill,
+      overlayColor: c.glassFill,
+      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+      overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+      showValueIndicator: ShowValueIndicator.never,
+    );
+    final caption = t.caption.copyWith(
+      color: c.textTertiary,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    final total = math.max(1, widget.totalBeats).toDouble();
+    final bars = (total / widget.beatsPerBar).ceil();
+    return SliderTheme(
+      data: theme,
+      child: Column(
+        children: [
+          ValueListenableBuilder<double>(
+            valueListenable: widget.beat,
+            builder: (context, b, _) {
+              final value = (_dragBeat ?? b).clamp(0, total).toDouble();
+              final bar = (value / widget.beatsPerBar).floor() + 1;
+              return Row(
+                children: [
+                  SizedBox(
+                    width: 64,
+                    child: Text('Bar ${math.min(bar, bars)}/$bars', style: caption),
+                  ),
+                  Expanded(
+                    child: Slider(
+                      value: value,
+                      max: total,
+                      semanticFormatterCallback: (v) =>
+                          'Bar ${(v / widget.beatsPerBar).floor() + 1} of $bars',
+                      onChanged: (v) => setState(() => _dragBeat = v),
+                      onChangeEnd: (v) {
+                        // Land on a bar line: songs restart on the downbeat.
+                        final snapped =
+                            (v / widget.beatsPerBar).floor() * widget.beatsPerBar.toDouble();
+                        setState(() => _dragBeat = null);
+                        widget.onSeek(snapped);
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          Row(
+            children: [
+              SizedBox(
+                width: 64,
+                child: Text('${(_dragBpm ?? widget.bpm).round()} BPM', style: caption),
+              ),
+              Expanded(
+                child: Slider(
+                  value: (_dragBpm ?? widget.bpm.toDouble()).clamp(40, 200).toDouble(),
+                  min: 40,
+                  max: 200,
+                  divisions: 160,
+                  semanticFormatterCallback: (v) => 'Tempo ${v.round()} beats per minute',
+                  onChanged: (v) => setState(() => _dragBpm = v),
+                  onChangeEnd: (v) {
+                    setState(() => _dragBpm = null);
+                    widget.onTempo(v.round());
+                  },
+                ),
+              ),
+              Semantics(
+                button: true,
+                label: widget.sound ? 'Mute the guitar part' : 'Play the guitar part',
+                excludeSemantics: true,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: widget.onToggleSound,
+                  child: SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: Icon(
+                      widget.sound ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                      size: 20,
+                      color: widget.sound ? c.textSecondary : c.textTertiary,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

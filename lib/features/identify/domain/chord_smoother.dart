@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:fretlight/core/audio/dsp/chord_detector.dart';
+import 'package:fretlight/core/audio/listening.dart';
 import 'package:fretlight/core/music/music.dart';
 import 'package:meta/meta.dart';
 
@@ -15,6 +16,7 @@ final class ChordReading {
     this.fading = false,
     this.strum = 0,
     this.settled = true,
+    this.candidates = const [],
   });
 
   /// Null while unsure or for a single note.
@@ -38,6 +40,11 @@ final class ChordReading {
   /// frames of a strum mix silence with the pick's click and can read as
   /// anything; practice waits for this before judging.
   final bool settled;
+
+  /// The leading chords by smoothed score, best first. Practice uses these:
+  /// it knows which chord you're aiming for, and checking that one chord is
+  /// among the closest is far more forgiving than naming it from scratch.
+  final List<ChordScore> candidates;
 
   static const notSureBelow = 0.35;
 
@@ -64,7 +71,12 @@ final class ChordSmoother {
     this.switchFrames = 2,
     this.hold = const Duration(milliseconds: 1500),
     this.onsetDb = 6,
+    this.floor,
   });
+
+  /// Room-relative gate: quieter frames are treated as silence. Without
+  /// one, anything the detector analysed counts.
+  final NoiseFloor? floor;
 
   final double hopSeconds;
   final double alpha;
@@ -73,7 +85,15 @@ final class ChordSmoother {
   final double onsetDb;
 
   final Map<Chord, double> _avg = {};
-  double? _lastDb;
+
+  /// Weighted running sums behind [_avg]: early frames of a strum (window
+  /// still half silence, half pick attack) count for less.
+  final Map<Chord, ({double sum, double weight})> _acc = {};
+
+  /// Levels of the last few frames. A strum's rise is spread over several
+  /// overlapping windows, so it's measured from the quietest of them, not
+  /// from the frame just before.
+  final List<double> _levels = [];
 
   /// Nothing is named until a strum has been heard: steady background
   /// sound (a fan, a TV, the room) never has the sudden attack of a strum,
@@ -86,7 +106,7 @@ final class ChordSmoother {
   /// fades) or "gained" (C → Cmaj7 from harmonics) keeps its name: a
   /// ringing chord doesn't change notes without a new strum.
   int _sinceOnset = 0;
-  static const _settleFrames = 4;
+  static const _settleFrames = 6;
 
   /// About a 16k window's worth of hops at 48 kHz (3 × 85 ms ≈ the window).
   static const _settledFrames = 3;
@@ -101,7 +121,8 @@ final class ChordSmoother {
 
   void reset() {
     _avg.clear();
-    _lastDb = null;
+    _levels.clear();
+    _acc.clear();
     _shown = null;
     _challenger = null;
     _challengerFrames = 0;
@@ -112,15 +133,16 @@ final class ChordSmoother {
   }
 
   ChordReading? update(ChordEstimate e) {
-    if (e.ranked.isEmpty) {
+    final playing = floor?.update(e.rmsDb) ?? true;
+    if (e.ranked.isEmpty || !playing) {
       _silentFor += hopSeconds;
       // Remember the quiet level: the next strum is measured against it.
-      _lastDb = e.rmsDb;
+      _pushLevel(e.rmsDb);
       final last = _reading;
       if (last == null) return null;
       if (_silentFor * 1e6 > hold.inMicroseconds) {
         reset();
-        _lastDb = e.rmsDb;
+        _pushLevel(e.rmsDb);
         return null;
       }
       return _reading = ChordReading(
@@ -137,22 +159,42 @@ final class ChordSmoother {
     // A clear jump in level is a new strum: start averaging afresh.
     // With no earlier level to compare (the mic just opened), only a clearly
     // loud sound counts as a strum.
-    final onset = _lastDb == null ? e.rmsDb > -30 : e.rmsDb > _lastDb! + onsetDb;
-    _lastDb = e.rmsDb;
+    final recentMin = _levels.isEmpty ? null : _levels.reduce(math.min);
+    final rising = recentMin == null
+        ? e.rmsDb > (floor?.gateDb ?? -36) + onsetDb
+        : e.rmsDb > recentMin + onsetDb;
+    // One strum, one onset: the rise spans several frames.
+    final onset = rising && (!_armed || _sinceOnset >= 3);
+    _pushLevel(e.rmsDb);
     if (onset) {
       _armed = true;
       _strums++;
+      // Measure the next strum from this one's level, not the silence before.
+      _levels
+        ..clear()
+        ..add(e.rmsDb);
     }
     if (!_armed) return null;
     if (onset) {
       _avg.clear();
+      _acc.clear();
       _singles.clear();
       _sinceOnset = 0;
     }
     _sinceOnset++;
+    final w = switch (_sinceOnset) {
+      1 => 0.2,
+      2 => 0.5,
+      _ => 1.0,
+    };
     for (final r in e.ranked) {
-      final prev = _avg[r.chord];
-      _avg[r.chord] = prev == null ? r.score : prev + alpha * (r.score - prev);
+      final prev = _acc[r.chord] ?? (sum: 0.0, weight: 0.0);
+      final next = (
+        sum: prev.sum * (1 - alpha) + w * r.score,
+        weight: prev.weight * (1 - alpha) + w,
+      );
+      _acc[r.chord] = next;
+      _avg[r.chord] = next.sum / next.weight;
     }
 
     _singles.add(e.singleNote);
@@ -203,12 +245,18 @@ final class ChordSmoother {
     final margin = ((shownScore - rival) / 0.05).clamp(0.0, 1.0);
     final confidence = 0.4 * level + 0.6 * margin;
     return _reading = ChordReading(
+      candidates: [for (final r in ranked.take(6)) (chord: r.key, score: r.value)],
       chord: confidence >= ChordReading.notSureBelow ? shown : null,
       confidence: confidence,
       bass: e.bass,
       strum: _strums,
       settled: _sinceOnset >= _settledFrames,
     );
+  }
+
+  void _pushLevel(double db) {
+    _levels.add(db);
+    if (_levels.length > 4) _levels.removeAt(0);
   }
 
   PitchClass? _majoritySingle() {

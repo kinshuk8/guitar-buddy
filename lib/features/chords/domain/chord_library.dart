@@ -9,7 +9,13 @@ final class ChordEntry {
     required this.rootName,
     required this.chord,
     required this.voicings,
+    this.customIds = const {},
   });
+
+  /// Voicing index → id of the user's own shape (shown first, deletable).
+  final Map<int, String> customIds;
+
+  bool get hasCustom => customIds.isNotEmpty;
 
   /// As shown and as stored in favourites: `C#m7`, `Bb/D`.
   final String symbol;
@@ -139,6 +145,52 @@ final class ChordLibrary {
   final Map<Chord, ChordEntry> _byChord;
 
   ChordEntry? bySymbol(String symbol) => _bySymbol[symbol];
+
+  /// This library plus the user's own shapes. A shape named like an
+  /// existing chord is added to it (shown first); one with a new name, or
+  /// with a name that isn't a chord symbol, becomes its own entry named
+  /// from its notes.
+  ChordLibrary withCustom(Map<String, ({String name, List<int?> frets})> custom) {
+    if (custom.isEmpty) return this;
+    final entries = [...this.entries];
+    final index = {for (final (i, e) in entries.indexed) e.chord: i};
+    for (final MapEntry(key: id, value: c) in custom.entries) {
+      final voicing = Voicing(frets: c.frets);
+      final chord =
+          Chord.tryParse(c.name) ??
+          ChordNamer.name(voicing.pitchClasses, bass: voicing.bass?.pitchClass);
+      if (chord == null) continue;
+      final at = index[chord];
+      if (at != null) {
+        final e = entries[at];
+        entries[at] = ChordEntry(
+          symbol: e.symbol,
+          rootName: e.rootName,
+          chord: e.chord,
+          voicings: [voicing, ...e.voicings],
+          customIds: {0: id, for (final x in e.customIds.entries) x.key + 1: x.value},
+        );
+      } else {
+        index[chord] = entries.length;
+        entries.add(
+          ChordEntry(
+            symbol: chord.symbol(),
+            rootName: chord.root.name(Spelling.forRoot(chord.root)),
+            chord: chord,
+            voicings: [voicing],
+            customIds: {0: id},
+          ),
+        );
+      }
+    }
+    return ChordLibrary(entries, sourceCommit: sourceCommit);
+  }
+
+  /// Entries holding at least one of the user's shapes.
+  List<ChordEntry> get custom => [
+    for (final e in entries)
+      if (e.hasCustom) e,
+  ];
 
   /// Looks a chord up regardless of spelling (`Db` finds `C#`).
   ChordEntry? byChord(Chord chord) => _byChord[chord];

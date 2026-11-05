@@ -1,4 +1,5 @@
 import 'package:fretlight/core/audio/dsp/pitch_tracker.dart';
+import 'package:fretlight/core/audio/listening.dart';
 import 'package:fretlight/core/music/music.dart';
 import 'package:meta/meta.dart';
 
@@ -34,7 +35,11 @@ final class NoteSession {
     this.minClarity = 0.9,
     this.minDb = -55,
     this.hold = const Duration(milliseconds: 800),
+    this.floor,
   });
+
+  /// Room-relative level gate; replaces [minDb] when set.
+  final NoiseFloor? floor;
 
   final int sampleRate;
   PitchMath math;
@@ -56,7 +61,8 @@ final class NoteSession {
 
   NoteReading? update(PitchFrame f) {
     final hz = f.hz;
-    final ok = hz != null && f.clarity >= minClarity && f.rmsDb >= minDb && hz > 60 && hz < 1500;
+    final loudEnough = floor?.update(f.rmsDb) ?? f.rmsDb >= minDb;
+    final ok = hz != null && f.clarity >= minClarity && loudEnough && hz > 60 && hz < 1500;
     if (!ok) {
       final last = _lastHeardSample;
       final r = _reading;

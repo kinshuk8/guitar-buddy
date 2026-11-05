@@ -12,16 +12,16 @@ import 'package:meta/meta.dart';
 const bundledSongIds = [
   'amazing_grace',
   'auld_lang_syne',
+  'aura_lee',
+  'beautiful_dreamer',
   'clementine',
-  'down_in_the_valley',
   'home_on_the_range',
+  'jingle_bells',
   'michael_row',
   'oh_susanna',
-  'red_river_valley',
   'scarborough_fair',
-  'shenandoah',
+  'simple_gifts',
   'swing_low',
-  'when_the_saints',
 ];
 
 @immutable

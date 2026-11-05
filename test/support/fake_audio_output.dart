@@ -5,7 +5,9 @@ import 'package:fretlight/core/audio/wav.dart';
 
 /// A loop the fake was asked to schedule.
 final class FakeLoop {
-  FakeLoop(this.voice, this.audio, this.start);
+  FakeLoop(this.voice, this.audio, this.start, {this.looping = true});
+
+  final bool looping;
 
   final LoopVoice voice;
   final WavAudio audio;
@@ -46,6 +48,13 @@ final class FakeAudioOutput implements AudioOutput {
   Future<LoopVoice> scheduleLoop(Uint8List wav, {required Duration at}) async {
     final v = LoopVoice(loops.length);
     loops.add(FakeLoop(v, decodeWav(wav), at));
+    return v;
+  }
+
+  @override
+  Future<LoopVoice> scheduleOnce(Uint8List wav, {required Duration at}) async {
+    final v = LoopVoice(loops.length);
+    loops.add(FakeLoop(v, decodeWav(wav), at, looping: false));
     return v;
   }
 

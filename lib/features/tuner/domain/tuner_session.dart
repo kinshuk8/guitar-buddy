@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:fretlight/core/audio/dsp/pitch_tracker.dart';
+import 'package:fretlight/core/audio/listening.dart';
 import 'package:fretlight/core/music/music.dart';
 import 'package:meta/meta.dart';
 
@@ -44,7 +45,12 @@ final class TunerSession {
     this.minClarity = 0.88,
     this.minLevelDb = -55,
     this.holdSeconds = 0.8,
+    this.floor,
   }) : _locked = lockedString;
+
+  /// Room-relative level gate. When set it replaces [minLevelDb]: sound
+  /// counts once it's clearly above this room's background.
+  final NoiseFloor? floor;
 
   final int sampleRate;
   final double minClarity;
@@ -110,7 +116,8 @@ final class TunerSession {
   /// Feeds one analysis frame; returns the current reading (or null).
   TunerReading? update(PitchFrame frame) {
     final hz = frame.hz;
-    final voiced = hz != null && frame.clarity >= minClarity && frame.rmsDb >= minLevelDb;
+    final loudEnough = floor?.update(frame.rmsDb) ?? frame.rmsDb >= minLevelDb;
+    final voiced = hz != null && frame.clarity >= minClarity && loudEnough;
     if (!voiced) {
       if (frame.endSample - _lastVoicedSample > holdSeconds * sampleRate) {
         _recent.clear();

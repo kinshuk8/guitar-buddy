@@ -88,7 +88,7 @@ final class ChromaChordDetector implements ChordDetector {
     required this.sampleRate,
     int? windowSize,
     this.qualities = ChordQuality.detectable,
-    this.silenceDb = -45,
+    this.silenceDb = -66,
   }) : windowSize = windowSize ?? chordWindow(sampleRate),
        _templates = _buildTemplates(qualities) {
     _fft = Fft(this.windowSize);
@@ -119,6 +119,32 @@ final class ChromaChordDetector implements ChordDetector {
   static const _minHz = 70.0;
   static const _maxHz = 4200.0;
   static const _bassMaxHz = 260.0;
+
+  /// A peak must be this many times its band's noise level (~12 dB).
+  static const _prominence = 4.0;
+
+  /// Noise level per bin: the 30th-percentile magnitude of its
+  /// quarter-octave band.
+  static double Function(int) _bandNoise(Float64List mag, int lo, int hi, double binHz) {
+    final edges = <int>[lo];
+    while (edges.last < hi) {
+      edges.add(
+        math.min(hi + 1, math.max(edges.last + 4, (edges.last * math.pow(2, 0.25)).ceil())),
+      );
+    }
+    final levels = <double>[];
+    for (var i = 0; i + 1 < edges.length; i++) {
+      final band = mag.sublist(edges[i], edges[i + 1])..sort();
+      levels.add(band[(band.length * 0.3).floor()]);
+    }
+    return (k) {
+      var i = 0;
+      while (i + 1 < edges.length - 1 && k >= edges[i + 1]) {
+        i++;
+      }
+      return levels[i];
+    };
+  }
 
   @override
   ChordEstimate detect(Float32List window) {
@@ -160,14 +186,21 @@ final class ChromaChordDetector implements ChordDetector {
         distinctNotes: 0,
       );
     }
-    // Peaks within 40 dB of the strongest one.
+    // Peaks within 40 dB of the strongest one, and clearly above the noise
+    // in their part of the spectrum. Room hiss makes thousands of tiny local
+    // maxima; counting them smears the chroma flat. The noise level is a
+    // low percentile per quarter-octave band: it follows the hiss and
+    // ignores the strong partials themselves (a mean would include them and
+    // drown a chord's weaker notes).
     final floor = peakMax * 0.01;
+    final noise = _bandNoise(mag, lo, hi, binHz);
     final chroma = Float64List(12);
     final low = <({double hz, double m})>[];
     final peaks = <({double hz, double m})>[];
     for (var k = lo; k <= hi; k++) {
       final m = mag[k];
       if (m < floor || m < mag[k - 1] || m < mag[k + 1]) continue;
+      if (m < _prominence * noise(k)) continue;
       // Parabolic interpolation on log magnitude: sub-bin frequency.
       final a = math.log(mag[k - 1] + 1e-12);
       final b = math.log(m + 1e-12);
@@ -247,7 +280,7 @@ final class ChromaChordDetector implements ChordDetector {
       }
       // Prefer the simpler name when two fit nearly equally: a bright C
       // puts some energy on B (harmonics of E and G) without being Cmaj7.
-      dot -= 0.015 * math.min(chord.quality.complexity, 2);
+      dot -= 0.008 * math.min(chord.quality.complexity, 2);
       ranked.add((chord: chord, score: dot));
     }
     ranked.sort((x, y) => y.score.compareTo(x.score));

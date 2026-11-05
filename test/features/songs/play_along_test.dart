@@ -51,6 +51,9 @@ void main() {
     await openSongs(tester);
     await openAmazingGrace(tester);
     expect(find.bySemanticsLabel(RegExp('^G major')), findsWidgets);
+    // Without the guitar part the song runs on its own clock.
+    await tester.tap(find.bySemanticsLabel('Mute the guitar part'));
+    await tester.pump();
 
     await tester.tap(find.bySemanticsLabel('Play'));
     await tester.pump();
@@ -117,5 +120,71 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('My Tune'), findsOneWidget);
     expect(store.userSongs.values.single, contains('[C]Hello'));
+  });
+
+  testWidgets('play schedules the guitar part; the chord shown follows the audio clock', (
+    tester,
+  ) async {
+    final devices = await openSongs(tester);
+    await openAmazingGrace(tester);
+    final speaker = devices.speaker;
+    final clock0 = speaker.now;
+
+    await tester.tap(find.bySemanticsLabel('Play'));
+    await tester.pump();
+    // Rendering happens in an isolate: real time, interleaved with pumps.
+    for (var i = 0; i < 10 && speaker.loops.isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 150)));
+      await tester.pump();
+    }
+    expect(speaker.loops, hasLength(1));
+    final part = speaker.loops.single;
+    expect(part.looping, isFalse);
+    expect(part.start, clock0 + const Duration(milliseconds: 80));
+    // 80 BPM, 3/4, 16 bars per verse × 2 = 96 beats = 72 s, plus a 1.5 s tail.
+    expect(part.audio.samples.length / 48000, closeTo(72 + 1.5, 0.1));
+
+    // Five seconds of audio later (G, G, then G7 from 4.5 s): G7 is now.
+    speaker.now = part.start + const Duration(seconds: 5);
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(find.bySemanticsLabel(RegExp('^G dominant 7th')), findsOneWidget);
+
+    // Muting stops the part but keeps the song going.
+    await tester.tap(find.bySemanticsLabel('Mute the guitar part'));
+    await tester.pump();
+    expect(part.stop, isNotNull);
+    expect(find.bySemanticsLabel('Pause'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Pause'));
+    await tester.pump();
+  });
+
+  testWidgets('the tempo slider in the dock sets the tempo and remembers it', (tester) async {
+    final store = LocalStore.memory();
+    await openSongs(tester, store: store);
+    await openAmazingGrace(tester);
+    expect(find.text('80 BPM'), findsOneWidget, reason: 'tempo shown beside its slider');
+    // Drag the tempo slider right.
+    await tester.drag(find.byType(Slider).last, const Offset(60, 0));
+    await tester.pumpAndSettle();
+    final saved = store.setting('song.amazing_grace')!.split(',').last;
+    expect(int.parse(saved), greaterThan(80));
+    expect(find.textContaining('$saved BPM'), findsWidgets);
+  });
+
+  testWidgets('writing a song with the editor buttons: section, chords, words', (tester) async {
+    final store = LocalStore.memory();
+    await openSongs(tester, store: store);
+    await tester.tap(find.bySemanticsLabel('Add a song'));
+    await tester.pumpAndSettle();
+    await tester.showKeyboard(find.byType(TextField));
+    await tester.tap(find.bySemanticsLabel('Insert Verse'));
+    await tester.pump();
+    await tester.ensureVisible(find.bySemanticsLabel('Insert chord G'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.bySemanticsLabel('Insert chord G'));
+    await tester.pump();
+    final text = tester.widget<TextField>(find.byType(TextField)).controller!.text;
+    expect(text, '{start_of_verse}\n[G]\n{end_of_verse}', reason: 'chord dropped inside the verse');
+    expect(find.textContaining('1 chords'), findsOneWidget);
   });
 }

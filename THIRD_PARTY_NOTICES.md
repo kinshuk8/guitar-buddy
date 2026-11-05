@@ -57,25 +57,36 @@ generated from the packages actually compiled in.
 
 ## Starter songs
 
-Twelve songs in `assets/songs/`, all public domain. Each file records its
-public-domain basis in a `{meta: public_domain …}` line, and the chord
-arrangements are original to Fretlight. Where a period text contains slurs
-(the 1848 *Oh! Susanna*), only the verses without them are used; *Scarborough
-Fair* follows 19th-century collected texts, not the 1966 Simon & Garfunkel
-arrangement; *Michael, Row the Boat Ashore* uses only the 1867 *Slave Songs of
-the United States* refrain and verse.
+Twelve songs in `assets/songs/`. Every one was published before 1900, so all
+are public domain in the US (published before 1929) and in life+70 countries
+(every author died before 1955). Each file records its public-domain basis
+(`{meta: public_domain …}`) and the publication its words follow
+(`{meta: source …}`). Chord arrangements are original to Fretlight.
 
-| Song | Basis |
+Choices made to stay clear of later copyrighted versions:
+- *Oh! Susanna*: only the 1848 verses without period slurs.
+- *Scarborough Fair*: Kidson's 1891 wording, not the 1966 Simon & Garfunkel
+  arrangement.
+- *Michael, Row the Boat Ashore*: only the refrain and verse printed in 1867,
+  none of the 1950s folk-revival verses.
+- *Home on the Range*: Lomax's 1910 text.
+- Four earlier candidates were dropped because their familiar words couldn't
+  be traced to a dated pre-1929 printing: *Red River Valley* (popular words
+  from 1920s recordings), *Down in the Valley* (familiar words match a 1927
+  recording), *When the Saints Go Marching In* (no dated print source), and
+  *Shenandoah* (the popular verses differ from the 1882 printing).
+
+| Song | Words from |
 |---|---|
-| Amazing Grace | John Newton, 1779; tune "New Britain", 1829 |
-| Auld Lang Syne | Robert Burns, 1788; traditional melody |
-| Down in the Valley | Traditional (Kentucky) |
-| Home on the Range | Brewster M. Higley / Daniel E. Kelley, c. 1872 |
-| Michael, Row the Boat Ashore | Spiritual, published 1867 |
+| Amazing Grace | John Newton, *Olney Hymns*, 1779 |
+| Auld Lang Syne | Robert Burns, *The Scots Musical Museum*, 1796 |
+| Aura Lee | W. W. Fosdick / G. R. Poulton, 1861 |
+| Beautiful Dreamer | Stephen Foster, 1864 |
+| Home on the Range | J. A. Lomax, *Cowboy Songs*, 1910 |
+| Jingle Bells | James Lord Pierpont, 1857/1859 |
+| Michael, Row the Boat Ashore | *Slave Songs of the United States*, 1867 |
 | Oh My Darling, Clementine | Percy Montrose, 1884 |
 | Oh! Susanna | Stephen Foster, 1848 |
-| Red River Valley | Traditional; published 1896 |
-| Scarborough Fair | Traditional English ballad |
-| Shenandoah | Traditional, early 19th century |
-| Swing Low, Sweet Chariot | Spiritual, before 1862; published 1872 |
-| When the Saints Go Marching In | Traditional spiritual |
+| Scarborough Fair | Frank Kidson, *Traditional Tunes*, 1891 |
+| Simple Gifts | Joseph Brackett, 1848 |
+| Swing Low, Sweet Chariot | Fisk Jubilee Singers, *Jubilee Songs*, 1872 |

@@ -2,11 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fretlight/core/audio/dsp/pitch_detector.dart';
 import 'package:fretlight/core/audio/engine/dsp_worker.dart';
 import 'package:fretlight/core/audio/input/audio_input_source.dart';
 import 'package:fretlight/core/audio/input/shared_mic.dart';
+import 'package:fretlight/core/audio/listening.dart';
 import 'package:fretlight/core/music/music.dart';
 import 'package:fretlight/core/storage/local_store.dart';
+import 'package:fretlight/core/widgets/mic_level.dart';
+import 'package:fretlight/features/settings/application/sensitivity.dart';
 import 'package:fretlight/features/tuner/domain/tuner_session.dart';
 
 export 'package:fretlight/core/audio/input/shared_mic.dart' show audioInputProvider;
@@ -235,13 +239,22 @@ final class TunerController extends Notifier<TunerState> {
       return;
     }
     worker.reset();
+    final sensitivity = ref.read(sensitivityProvider);
+    final floor = NoiseFloor(
+      marginDb: sensitivity.marginDb,
+      frameSeconds: analysisGeometry(rate).hop / rate,
+    );
+    final level = ref.read(micLevelProvider.notifier);
     final session = _session = TunerSession(
       tuning: state.tuning,
       sampleRate: rate,
       lockedString: state.lockedString,
       math: PitchMath(a4: state.a4),
+      minClarity: sensitivity.tunerClarity,
+      floor: floor,
     );
     _frames = worker.frames.listen((frame) {
+      level.report(frame.rmsDb, floor.gateDb);
       final before = session.reading;
       final after = session.update(frame);
       if (!identical(before, after)) state = state.copyWith(reading: () => after);
@@ -251,6 +264,7 @@ final class TunerController extends Notifier<TunerState> {
   }
 
   Future<void> _stopCapture() async {
+    if (ref.mounted) ref.read(micLevelProvider.notifier).clear();
     await _pcm?.cancel();
     _pcm = null;
     await _frames?.cancel();

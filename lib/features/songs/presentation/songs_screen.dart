@@ -10,6 +10,7 @@ import 'package:fretlight/core/design/tokens.dart';
 import 'package:fretlight/core/widgets/glass.dart';
 import 'package:fretlight/core/widgets/glass_controls.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
+import 'package:fretlight/features/chords/application/chord_library_provider.dart';
 import 'package:fretlight/features/progressions/data/progression_pack.dart';
 import 'package:fretlight/features/progressions/presentation/progressions_view.dart';
 import 'package:fretlight/features/songs/application/songs_controller.dart';
@@ -239,6 +240,25 @@ class _SongEditorState extends ConsumerState<_SongEditor> {
     setState(() => _preview = src.trim().isEmpty ? null : SongsController.preview(src));
   }
 
+  /// Common chords, then the user's own shapes.
+  List<String> get _chordChoices => <String>{
+    ...const ['G', 'C', 'D', 'Em', 'Am', 'E', 'A', 'Dm', 'F', 'G7', 'D7', 'A7', 'E7', 'C7', 'B7'],
+    for (final c in ref.read(customChordsProvider).values) c.name,
+  }.toList();
+
+  /// Inserts [text] at the cursor, leaving the cursor at [caretAt] within
+  /// it (default: after it).
+  void _insert(String text, {int? caretAt}) {
+    final sel = _text.selection;
+    final value = _text.text;
+    final start = sel.isValid ? sel.start : value.length;
+    final end = sel.isValid ? sel.end : value.length;
+    _text.value = TextEditingValue(
+      text: value.replaceRange(start, end, text),
+      selection: TextSelection.collapsed(offset: start + (caretAt ?? text.length)),
+    );
+  }
+
   Future<void> _importFile() async {
     final picked = await FilePicker.pickFile(
       type: FileType.custom,
@@ -296,10 +316,42 @@ class _SongEditorState extends ConsumerState<_SongEditor> {
           ),
           const SizedBox(height: Space.md),
           Text(
-            'Paste ChordPro: chords in brackets before the syllable, like [G]Amazing [C]grace.',
+            'Write or paste ChordPro: chords in brackets before the syllable, like '
+            '[G]Amazing [C]grace. Tap a chord below to drop it in at the cursor.',
             style: t.caption.copyWith(color: c.textTertiary),
           ),
           const SizedBox(height: Space.md),
+          // About twenty buttons: a plain scrolling row, all built up front.
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final (label, text, caret) in const [
+                  ('Title', '{title: }', 8),
+                  ('Verse', '{start_of_verse}\n\n{end_of_verse}', 17),
+                  ('Chorus', '{start_of_chorus}\n\n{end_of_chorus}', 18),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(right: Space.xs),
+                    child: GlassPill(
+                      label: label,
+                      semantics: 'Insert $label',
+                      onTap: () => _insert(text, caretAt: caret),
+                    ),
+                  ),
+                for (final chord in _chordChoices)
+                  Padding(
+                    padding: const EdgeInsets.only(right: Space.xs),
+                    child: GlassPill(
+                      label: chord,
+                      semantics: 'Insert chord $chord',
+                      onTap: () => _insert('[$chord]'),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: Space.sm),
           DecoratedBox(
             decoration: BoxDecoration(
               color: c.glassFill,

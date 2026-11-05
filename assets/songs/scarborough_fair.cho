@@ -3,19 +3,20 @@
 {key: Am}
 {time: 3/4}
 {tempo: 96}
-{meta: public_domain Traditional English ballad; this text follows versions collected and published in the 19th century (e.g. Frank Kidson, 1891). Not the 1966 Simon & Garfunkel arrangement.}
+{meta: public_domain Traditional English ballad; this text follows Frank Kidson's 1891 printing, not the 1966 Simon & Garfunkel arrangement.}
+{meta: source Frank Kidson, Traditional Tunes, Oxford, 1891.}
 {meta: arrangement Original chord arrangement for Fretlight}
 
 {start_of_verse: Verse 1}
 [Am]Are you going to [G]Scarborough [Am]Fair?[Am]
 [C]Parsley, [Am]sage, rose[C]mary and [D]thyme;[D]
 [Am]Remember [C]me to one who [G]lives there,[G]
-[Am]For once she [G]was a true love of [Am]mine.[Am]
+[Am]For once she [G]was a true lover of [Am]mine.[Am]
 {end_of_verse}
 
 {start_of_verse: Verse 2}
 [Am]Tell her to make me a [G]cambric [Am]shirt,[Am]
 [C]Parsley, [Am]sage, rose[C]mary and [D]thyme;[D]
-[Am]Without no [C]seams nor needle[G]work,[G]
-[Am]Then she'll [G]be a true love of [Am]mine.[Am]
+[Am]Without any [C]seam or needle[G]work,[G]
+[Am]And then she shall [G]be a true lover of [Am]mine.[Am]
 {end_of_verse}

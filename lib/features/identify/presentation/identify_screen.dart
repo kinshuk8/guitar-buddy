@@ -12,6 +12,7 @@ import 'package:fretlight/core/painting/fretboard.dart';
 import 'package:fretlight/core/painting/fretboard_painter.dart';
 import 'package:fretlight/core/widgets/glass.dart';
 import 'package:fretlight/core/widgets/listening.dart';
+import 'package:fretlight/core/widgets/mic_level.dart';
 import 'package:fretlight/core/widgets/music_text.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
 import 'package:fretlight/features/chords/application/chord_library_provider.dart';
@@ -85,6 +86,8 @@ class IdentifyScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: Space.sm),
                   child: Text('Paused while another app uses the microphone', style: text.caption),
                 ),
+              const MicLevelMeter(),
+              const SizedBox(height: Space.xs),
               // Honest about the limits, without shouting.
               Text(
                 'Made for one guitar in a quiet room',

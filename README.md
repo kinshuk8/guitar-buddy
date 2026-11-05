@@ -68,6 +68,31 @@ starter songs ship in `assets/songs/`; you can paste or import your own. The
 player assumes **one chord per bar** (ChordPro has no timing), so the
 starter songs put a chord at every bar; adjust the tempo for other sheets.
 
+Every starter song was published before 1900 and carries its source in a
+`{meta: source}` line (the test suite requires it); see THIRD_PARTY_NOTICES
+for each one and for the songs that were dropped as possibly still in
+copyright.
+
+Press play and the app strums the guitar part (synthesised, rendered on the
+device) so you can hear how the song should sound. There is no melody,
+because ChordPro sheets don't have one. The dock has a position slider
+(snaps to bars) and a tempo slider (40 to 200 BPM). The arrange sheet picks
+the strum pattern and an optional click.
+
+## Listening
+
+Every listening screen shows a mic level bar with a gate line. The gate
+follows the room's noise floor (`lib/core/audio/listening.dart`), so a
+fan or hum doesn't count as playing. Settings → Listening → Sensitivity
+sets how far above the room you need to play (Low 15 dB, Normal 10 dB,
+High 6 dB).
+
+## Your own chords
+
+Chords → + draws a shape on a tap grid. It names itself from its notes and
+is saved in Drift (schema v3, `custom_chords`). A shape named like an
+existing chord becomes that chord's first voicing.
+
 ## The progression pack (optional)
 
 `assets/packs/chordonomicon/` holds 300 common chord loops distilled from
