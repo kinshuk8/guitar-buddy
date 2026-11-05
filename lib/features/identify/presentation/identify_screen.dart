@@ -262,8 +262,7 @@ class _NoteView extends ConsumerWidget {
                       ),
                       const SizedBox(height: Space.sm),
                       Text(
-                        '${r.hz.toStringAsFixed(1)} Hz · '
-                        '${r.cents >= 0 ? '+' : '−'}${r.cents.abs().round()}¢',
+                        '${r.hz.toStringAsFixed(1)} Hz · ${formatCents(r.cents)}',
                         style: t.caption.copyWith(
                           color: c.textTertiary,
                           fontFeatures: const [FontFeature.tabularFigures()],

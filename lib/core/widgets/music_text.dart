@@ -134,9 +134,7 @@ class TuningStateBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.stage;
     final color = state.color(c);
-    final centsText = cents == null
-        ? ''
-        : ' ${cents! >= 0 ? '+' : '−'}${cents!.abs().toStringAsFixed(0)}¢';
+    final centsText = cents == null ? '' : ' ${formatCents(cents!)}';
     return Semantics(
       liveRegion: true,
       label:
@@ -167,4 +165,11 @@ class TuningStateBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Signed whole cents, "+3¢" / "−3¢" / "0¢". Rounded before the sign is
+/// chosen, so −0.3 reads "0¢", not "−0¢".
+String formatCents(double cents) {
+  final r = cents.round();
+  return r == 0 ? '0¢' : '${r > 0 ? '+' : '−'}${r.abs()}¢';
 }
