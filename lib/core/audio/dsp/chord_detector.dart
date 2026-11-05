@@ -214,7 +214,7 @@ final class ChromaChordDetector implements ChordDetector {
       if (off > 0.35) continue;
       // High partials are mostly harmonics of lower notes, not notes in
       // their own right: they count for less.
-      final w = math.sqrt(m) * (1 - (off / 0.35) * (off / 0.35)) / (1 + hz / 700);
+      final w = math.sqrt(m) * (1 - (off / 0.35) * (off / 0.35)) / (1 + hz / 2800);
       final pc = nearest % 12;
       chroma[pc] += w;
       if (hz <= _bassMaxHz) low.add((hz: hz, m: m));
@@ -281,6 +281,17 @@ final class ChromaChordDetector implements ChordDetector {
       // Prefer the simpler name when two fit nearly equally: a bright C
       // puts some energy on B (harmonics of E and G) without being Cmaj7.
       dot -= 0.008 * math.min(chord.quality.complexity, 2);
+      // A strong note the chord doesn't contain counts against it. The
+      // template already expects some energy on its tones' harmonics, so a
+      // real 7th (as in Fmaj7's open E) otherwise hides there.
+      final pcs = chord.pitchClasses;
+      var unexplained = 0.0;
+      for (var i = 0; i < 12; i++) {
+        if (!pcs.contains(PitchClass(i))) {
+          unexplained += math.max(0, chroma[i] / maxChroma - _unexplainedFrom);
+        }
+      }
+      dot -= _unexplainedWeight * unexplained;
       ranked.add((chord: chord, score: dot));
     }
     ranked.sort((x, y) => y.score.compareTo(x.score));
@@ -323,6 +334,11 @@ final class ChromaChordDetector implements ChordDetector {
   /// Pitch-class steps of the first six harmonics: 1, 2 (octave), 3 (octave
   /// + fifth), 4, 5 (two octaves + major third), 6. Weights fall off like a
   /// plucked string's partials.
+  /// Above this share of the strongest note, a note outside the chord costs
+  /// [_unexplainedWeight] per unit.
+  static const _unexplainedFrom = 0.35;
+  static const _unexplainedWeight = 0.15;
+
   static const _harmonics = [(0, 1.0), (0, 0.7), (7, 0.6), (0, 0.45), (4, 0.4), (7, 0.3)];
 
   static List<({Chord chord, Float64List t})> _buildTemplates(List<ChordQuality> qualities) {

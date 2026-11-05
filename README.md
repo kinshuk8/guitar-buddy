@@ -87,6 +87,25 @@ fan or hum doesn't count as playing. Settings → Listening → Sensitivity
 sets how far above the room you need to play (Low 15 dB, Normal 10 dB,
 High 6 dB).
 
+The tuner finds the period with MPM, then measures the fundamental
+partial itself (`lib/core/audio/dsp/fundamental.dart`). On a real steel
+string the upper partials run slightly sharp, which pulls a period
+detector 2–4 cents high; the fundamental is what the string is tuned to.
+`test/features/tuner/tuner_accuracy_test.dart` checks every string at
+seven offsets: within 0.3¢ on clean and stiff-string signals, and about 1¢
+with room noise at 15 dB SNR.
+
+## Guitar sound
+
+The synthesised guitar (`lib/core/audio/synth/`) is Karplus–Strong with
+fractional-delay tuning, so every note is within 0.01¢ of its pitch. The
+string is excited by the force a pluck puts on the bridge (harmonics
+falling as ~1/n, with the pick-position notch), not white noise. A loop
+low-pass makes high harmonics die first, and a body filter adds the
+~100/200/400 Hz resonances of an acoustic guitar. `strum_test.dart`
+checks the tuning of every string up to the 12th fret and the harmonic
+profile.
+
 ## Your own chords
 
 Chords → + draws a shape on a tap grid. It names itself from its notes and

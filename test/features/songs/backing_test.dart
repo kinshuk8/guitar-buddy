@@ -14,7 +14,8 @@ const sr = 48000;
 /// Strum onsets: where 10 ms energy jumps well above the frame before,
 /// even while the last chord still rings.
 List<int> strumOnsets(Float32List pcm, {double rise = 4}) {
-  const frame = 480;
+  // 20 ms: longer than a low-E period, so a ringing chord reads steady.
+  const frame = 960;
   final out = <int>[];
   var prev = 1e-9;
   var cooldown = 0;
@@ -28,7 +29,7 @@ List<int> strumOnsets(Float32List pcm, {double rise = 4}) {
       cooldown--;
     } else if (e > 1e-6 && e > prev * rise) {
       out.add(i);
-      cooldown = 10;
+      cooldown = 5;
     }
     prev = e;
   }

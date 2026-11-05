@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:fretlight/core/audio/dsp/correlogram.dart';
+import 'package:fretlight/core/audio/dsp/fundamental.dart';
 import 'package:fretlight/core/audio/dsp/pitch_detector.dart';
 
 /// McLeod Pitch Method (McLeod & Wyvill, 2005) on an FFT correlogram.
@@ -17,7 +18,11 @@ final class MpmDetector implements PitchDetector {
     this.maxHz = 1400,
     this.cutoff = 0.93,
     this.minClarity = 0.5,
-  }) : _correlogram = Correlogram(windowSize, (sampleRate / minHz).ceil() + 1),
+    bool refine = true,
+  }) : _refiner = refine
+           ? FundamentalRefiner(sampleRate: sampleRate, windowSize: windowSize)
+           : null,
+       _correlogram = Correlogram(windowSize, (sampleRate / minHz).ceil() + 1),
        _nsdf = Float64List((sampleRate / minHz).ceil() + 2);
 
   final int sampleRate;
@@ -28,6 +33,9 @@ final class MpmDetector implements PitchDetector {
   final double cutoff;
   final double minClarity;
 
+  /// Moves the period estimate onto the fundamental partial itself, which
+  /// on a stiff (real) string is a few cents below the waveform's period.
+  final FundamentalRefiner? _refiner;
   final Correlogram _correlogram;
   final Float64List _nsdf;
   final List<int> _keyMaxima = [];
@@ -72,8 +80,9 @@ final class MpmDetector implements PitchDetector {
     final threshold = cutoff * highest;
     final chosen = _keyMaxima.firstWhere((k) => n[k] >= threshold);
     final (lag, value) = parabolicVertex(n, chosen);
-    final hz = sampleRate / lag;
+    var hz = sampleRate / lag;
     if (hz < minHz || hz > maxHz) return null;
+    hz = _refiner?.refine(window, hz) ?? hz;
     return PitchEstimate(hz, value.clamp(0.0, 1.0));
   }
 }

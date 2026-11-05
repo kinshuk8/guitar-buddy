@@ -258,4 +258,31 @@ void main() {
       expect(run(hiss, sensitivity: s).where((f) => f.$2 != null), isEmpty, reason: s.name);
     }
   });
+
+  group('strum counting', () {
+    final open8 = ['C', 'G', 'D', 'A', 'E', 'Am', 'Em', 'Dm'];
+
+    test('one strum is one onset, however long it takes to build up', () {
+      for (final c in open8) {
+        final v = library.bySymbol(c)!.voicings.first;
+        final pcm = Float32List.fromList([...Float32List(sr ~/ 2), ...strum(v)]);
+        final strums = {for (final (_, r) in run(pcm, sensitivity: Sensitivity.normal)) ?r?.strum};
+        expect(strums, {1}, reason: c);
+      }
+    });
+
+    test('a new strum over a still-ringing chord counts, and is named', () {
+      final g = strum(library.bySymbol('G')!.voicings.first);
+      final c = strum(library.bySymbol('C')!.voicings.first);
+      // C strummed 1.2 s into G, while G still rings (no silence between).
+      final at = (1.2 * sr).round();
+      final pcm = Float32List(at + c.length)..setAll(0, g);
+      for (var i = 0; i < c.length; i++) {
+        pcm[at + i] += c[i];
+      }
+      final frames = run(pcm, sensitivity: Sensitivity.normal);
+      expect(frames.last.$2?.strum, 2);
+      expect(frames.last.$2?.chord?.symbol(), 'C');
+    });
+  });
 }

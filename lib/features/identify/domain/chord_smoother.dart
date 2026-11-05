@@ -101,6 +101,13 @@ final class ChordSmoother {
   bool _armed = false;
   int _strums = 0;
 
+  /// Set at an onset until the level peaks: a full strum keeps getting
+  /// louder for a few frames as it fills the window (and the low strings
+  /// ring up), and that build-up must not read as a second strum. While it
+  /// builds, the next onset is measured from the latest frame alone.
+  bool _building = false;
+  double _peakDb = -200;
+
   /// Frames since the last strum. While a strum settles any chord may take
   /// over; afterwards the same chord with notes lost (D → D5 as the high E
   /// fades) or "gained" (C → Cmaj7 from harmonics) keeps its name: a
@@ -122,6 +129,7 @@ final class ChordSmoother {
   void reset() {
     _avg.clear();
     _levels.clear();
+    _building = false;
     _acc.clear();
     _shown = null;
     _challenger = null;
@@ -166,8 +174,20 @@ final class ChordSmoother {
     // One strum, one onset: the rise spans several frames.
     final onset = rising && (!_armed || _sinceOnset >= 3);
     _pushLevel(e.rmsDb);
+    if (_building) {
+      if (e.rmsDb < _peakDb - 1) {
+        _building = false;
+      } else {
+        _peakDb = math.max(_peakDb, e.rmsDb);
+        _levels
+          ..clear()
+          ..add(e.rmsDb);
+      }
+    }
     if (onset) {
       _armed = true;
+      _building = true;
+      _peakDb = e.rmsDb;
       _strums++;
       // Measure the next strum from this one's level, not the silence before.
       _levels
