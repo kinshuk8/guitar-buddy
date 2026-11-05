@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/kinshuk8/guitar-buddy/releases"><img src="https://img.shields.io/badge/release-v0.7.0%20pre--release-2f6f62" alt="Release: v0.7.0 pre-release"></a>
+  <a href="https://github.com/kinshuk8/guitar-buddy/releases"><img src="https://img.shields.io/badge/release-v0.8.0%20pre--release-2f6f62" alt="Release: v0.8.0 pre-release"></a>
   <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS-3b4a6b" alt="Platforms: Android and iOS">
   <img src="https://img.shields.io/badge/Flutter-3.47-02569B?logo=flutter&logoColor=white" alt="Built with Flutter 3.47">
   <img src="https://img.shields.io/badge/network-none%20at%20runtime-555" alt="No network access at runtime">
@@ -104,9 +104,9 @@ Android builds are published on the
    file manager when Android asks.
 3. Grant microphone access the first time you open the tuner.
 
-Requires Android 7.0 (API 24) or later. Current releases are pre-releases
-for testing. They are not signed with a release key, so they will not
-update in place over a future Play Store install. iOS (15.0 or later)
+Requires Android 7.0 (API 24) or later. Releases are currently
+pre-releases for testing. From 0.8.0 they are signed with the project's
+release key; if you installed 0.7.0 or earlier, uninstall it first. iOS (15.0 or later)
 builds from source; no App Store build is published yet.
 
 ## How it works
@@ -197,7 +197,7 @@ in a `{meta: source}` line, which the test suite checks.
 
 ## Roadmap
 
-- Release-signed Android builds and a Google Play listing
+- A Google Play listing
 - An App Store build for iOS
 - Validation against real guitar recordings across more phones and rooms
 - A final open-source licence for the code
