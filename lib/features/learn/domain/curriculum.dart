@@ -638,8 +638,8 @@ const curriculum = <Stage>[
           skill: Skill.chords,
           xp: 30,
           steps: [
-            ChordSteps(['Bm'], repeat: 4),
-            ChordSteps(['G', 'D', 'Bm', 'A'], repeat: 2),
+            ChordSteps(['Bm:x24432'], repeat: 4),
+            ChordSteps(['G', 'D', 'Bm:x24432', 'A'], repeat: 2),
           ],
         ),
       ]),

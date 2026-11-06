@@ -89,3 +89,85 @@ sus2, because the fifth's own 3rd harmonic is the 2nd.
 Real guitars, real phone mics, real rooms. The single biggest unknown is how
 much a phone's microphone colours the low strings. Recordings in
 `test/fixtures/wav/` will answer it.
+
+## Real-world conditions (2026-11-07)
+
+A user reported Em reading as E5 and Am as A5 with wired EarPods held
+near the guitar. Reproduced with a slow strum through a bassy headset-mic
+model: the smoother's family lock (meant to stop a fading D becoming D5)
+kept the power chord it settled on first, before the third arrived.
+
+Every chord the lessons teach, plus common extras, was then run under ten
+conditions (`test/core/audio/chord_conditions_test.dart`): strum speed,
+up-strums, a close mic hearing the bass strings 9 dB louder (realistic)
+and 18 dB louder (extreme), uneven picking, and a distant detuned phone in
+room noise. Before the fixes, 38 of 296 chord/condition pairs read the
+wrong name; after them, the only misses are Gmaj7 (not taught; its
+library shape has the 7th only on the high E string) and G7/Dsus2 under
+the extreme mic, where they read as G/D5, which practice accepts as
+"close". Fixes:
+
+- the family lock lets a power chord become its triad (E5 → Em), never
+  the reverse;
+- chroma uses magnitude^0.35 (was ^0.5), so string-level imbalance from
+  mic placement counts for less;
+- power and sus chords score lower with a non-root bass (D5 over a low A
+  is Asus4; A5 over a low E is Esus4);
+- the B minor lesson shows the A-shape (x24432) it describes.
+
+```
+== Chords under real-world conditions ==
+Share of settled readings (after the first third of the ring) naming the chord exactly;
+[c] = the rest were the same chord give or take a note (E5 for Em: practice counts these).
+
+chord                    fast       normal         slow     up-strum      headset headset slow   very bassy v.bassy slow       uneven    far+noise
+Em                       100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Am                       100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+D                        100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+G                        100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+A                        100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+E                        100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+C                        100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Dm                       100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Fmaj7                    100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+F                        100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+G7                       100%         100%         100%         100%         100%         100%        0%c G        0%c G         100%         100%
+D7                       100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+A7                       100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+E7                       100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Dsus4                    100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Dsus2                    100%         100%         100%         100%         100%         100%         100%       0%c D5         100%         100%
+Asus4                    100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Bm:x24432                100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+F:133211                 100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+G:355433                 100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+A:577655                 100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Bb:688766                100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Cm:x35543                100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+C#m:x46654               100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Dm:x57765                100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Bb                       100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+B7                       100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+C7                       100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Am7                      100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Em7                      100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Dm7                      100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Cmaj7                    100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Gmaj7                   0%c G        0%c G         100%         100%        0%c G        0%c G        0%c G        0%c G        0%c G         100%
+Asus2                    100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+Esus4                    100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+F#m                      100%         100%         100%         100%         100%         100%         100%         100%         100%         100%
+
+36 chords × 10 conditions; under 90%: 10
+G7/very bassy: 0% (G)
+G7/v.bassy slow: 0% (G)
+Dsus2/v.bassy slow: 0% (D5)
+Gmaj7/fast: 0% (G)
+Gmaj7/normal: 0% (G)
+Gmaj7/headset: 0% (G)
+Gmaj7/headset slow: 0% (G)
+Gmaj7/very bassy: 0% (G)
+Gmaj7/v.bassy slow: 0% (G)
+Gmaj7/uneven: 0% (G)
+```
+

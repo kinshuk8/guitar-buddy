@@ -197,6 +197,7 @@ final class ChromaChordDetector implements ChordDetector {
     final chroma = Float64List(12);
     final low = <({double hz, double m})>[];
     final peaks = <({double hz, double m})>[];
+    final notes = <({double hz, double m, int pc, double fit})>[];
     for (var k = lo; k <= hi; k++) {
       final m = mag[k];
       if (m < floor || m < mag[k - 1] || m < mag[k + 1]) continue;
@@ -212,13 +213,15 @@ final class ChromaChordDetector implements ChordDetector {
       final nearest = midi.round();
       final off = (midi - nearest).abs();
       if (off > 0.35) continue;
-      // High partials are mostly harmonics of lower notes, not notes in
-      // their own right: they count for less.
-      final w = math.sqrt(m) * (1 - (off / 0.35) * (off / 0.35)) / (1 + hz / 2800);
-      final pc = nearest % 12;
-      chroma[pc] += w;
+      notes.add((hz: hz, m: m, pc: nearest % 12, fit: 1 - (off / 0.35) * (off / 0.35)));
       if (hz <= _bassMaxHz) low.add((hz: hz, m: m));
       peaks.add((hz: hz, m: m));
+    }
+
+    for (final n in notes) {
+      // High partials are mostly harmonics of lower notes, not notes in
+      // their own right: they count for less.
+      chroma[n.pc] += math.pow(n.m, _compression) * n.fit / (1 + n.hz / 2800);
     }
 
     final norm = _l2(chroma);
@@ -276,6 +279,15 @@ final class ChromaChordDetector implements ChordDetector {
           dot += 0.03;
         } else if (!chord.pitchClasses.contains(bass)) {
           dot -= 0.05;
+        } else if (const {
+          ChordQuality.power,
+          ChordQuality.sus2,
+          ChordQuality.sus4,
+        }.contains(chord.quality)) {
+          // Power and sus chords are played from their root: D5 over a low
+          // A is really an A chord (Asus4's A, D, E hold D and A too), and
+          // A5 over a low E is an Esus4.
+          dot -= 0.08;
         }
       }
       // Prefer the simpler name when two fit nearly equally: a bright C
@@ -334,6 +346,13 @@ final class ChromaChordDetector implements ChordDetector {
   /// Pitch-class steps of the first six harmonics: 1, 2 (octave), 3 (octave
   /// + fifth), 4, 5 (two octaves + major third), 6. Weights fall off like a
   /// plucked string's partials.
+  /// Exponent applied to each peak's magnitude in the chroma (0.5 = square
+  /// root). A close mic can hear the bass strings 9-18 dB louder than the
+  /// treble, where the notes that tell D from D5 or G7 from G often are;
+  /// 0.35 squeezes that difference (18 dB counts as 6) without letting a
+  /// C's faint B harmonic make it Cmaj7 (as 0.25 does).
+  static const _compression = 0.35;
+
   /// Above this share of the strongest note, a note outside the chord costs
   /// [_unexplainedWeight] per unit.
   static const _unexplainedFrom = 0.35;
