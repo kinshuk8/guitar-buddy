@@ -1178,6 +1178,814 @@ class CustomChordsCompanion extends UpdateCompanion<CustomChord> {
   }
 }
 
+class $LessonRecordsTable extends LessonRecords with TableInfo<$LessonRecordsTable, LessonRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LessonRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _lessonIdMeta = const VerificationMeta('lessonId');
+  @override
+  late final GeneratedColumn<String> lessonId = GeneratedColumn<String>(
+    'lesson_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _starsMeta = const VerificationMeta('stars');
+  @override
+  late final GeneratedColumn<int> stars = GeneratedColumn<int>(
+    'stars',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bestScoreMeta = const VerificationMeta('bestScore');
+  @override
+  late final GeneratedColumn<double> bestScore = GeneratedColumn<double>(
+    'best_score',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _attemptsMeta = const VerificationMeta('attempts');
+  @override
+  late final GeneratedColumn<int> attempts = GeneratedColumn<int>(
+    'attempts',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastPlayedMeta = const VerificationMeta('lastPlayed');
+  @override
+  late final GeneratedColumn<DateTime> lastPlayed = GeneratedColumn<DateTime>(
+    'last_played',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [lessonId, stars, bestScore, attempts, lastPlayed];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'lesson_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LessonRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('lesson_id')) {
+      context.handle(
+        _lessonIdMeta,
+        lessonId.isAcceptableOrUnknown(data['lesson_id']!, _lessonIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lessonIdMeta);
+    }
+    if (data.containsKey('stars')) {
+      context.handle(_starsMeta, stars.isAcceptableOrUnknown(data['stars']!, _starsMeta));
+    } else if (isInserting) {
+      context.missing(_starsMeta);
+    }
+    if (data.containsKey('best_score')) {
+      context.handle(
+        _bestScoreMeta,
+        bestScore.isAcceptableOrUnknown(data['best_score']!, _bestScoreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bestScoreMeta);
+    }
+    if (data.containsKey('attempts')) {
+      context.handle(
+        _attemptsMeta,
+        attempts.isAcceptableOrUnknown(data['attempts']!, _attemptsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_attemptsMeta);
+    }
+    if (data.containsKey('last_played')) {
+      context.handle(
+        _lastPlayedMeta,
+        lastPlayed.isAcceptableOrUnknown(data['last_played']!, _lastPlayedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lastPlayedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {lessonId};
+  @override
+  LessonRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LessonRecord(
+      lessonId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lesson_id'],
+      )!,
+      stars: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}stars'])!,
+      bestScore: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}best_score'],
+      )!,
+      attempts: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempts'],
+      )!,
+      lastPlayed: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_played'],
+      )!,
+    );
+  }
+
+  @override
+  $LessonRecordsTable createAlias(String alias) {
+    return $LessonRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class LessonRecord extends DataClass implements Insertable<LessonRecord> {
+  final String lessonId;
+  final int stars;
+  final double bestScore;
+  final int attempts;
+  final DateTime lastPlayed;
+  const LessonRecord({
+    required this.lessonId,
+    required this.stars,
+    required this.bestScore,
+    required this.attempts,
+    required this.lastPlayed,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['lesson_id'] = Variable<String>(lessonId);
+    map['stars'] = Variable<int>(stars);
+    map['best_score'] = Variable<double>(bestScore);
+    map['attempts'] = Variable<int>(attempts);
+    map['last_played'] = Variable<DateTime>(lastPlayed);
+    return map;
+  }
+
+  LessonRecordsCompanion toCompanion(bool nullToAbsent) {
+    return LessonRecordsCompanion(
+      lessonId: Value(lessonId),
+      stars: Value(stars),
+      bestScore: Value(bestScore),
+      attempts: Value(attempts),
+      lastPlayed: Value(lastPlayed),
+    );
+  }
+
+  factory LessonRecord.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LessonRecord(
+      lessonId: serializer.fromJson<String>(json['lessonId']),
+      stars: serializer.fromJson<int>(json['stars']),
+      bestScore: serializer.fromJson<double>(json['bestScore']),
+      attempts: serializer.fromJson<int>(json['attempts']),
+      lastPlayed: serializer.fromJson<DateTime>(json['lastPlayed']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'lessonId': serializer.toJson<String>(lessonId),
+      'stars': serializer.toJson<int>(stars),
+      'bestScore': serializer.toJson<double>(bestScore),
+      'attempts': serializer.toJson<int>(attempts),
+      'lastPlayed': serializer.toJson<DateTime>(lastPlayed),
+    };
+  }
+
+  LessonRecord copyWith({
+    String? lessonId,
+    int? stars,
+    double? bestScore,
+    int? attempts,
+    DateTime? lastPlayed,
+  }) => LessonRecord(
+    lessonId: lessonId ?? this.lessonId,
+    stars: stars ?? this.stars,
+    bestScore: bestScore ?? this.bestScore,
+    attempts: attempts ?? this.attempts,
+    lastPlayed: lastPlayed ?? this.lastPlayed,
+  );
+  LessonRecord copyWithCompanion(LessonRecordsCompanion data) {
+    return LessonRecord(
+      lessonId: data.lessonId.present ? data.lessonId.value : this.lessonId,
+      stars: data.stars.present ? data.stars.value : this.stars,
+      bestScore: data.bestScore.present ? data.bestScore.value : this.bestScore,
+      attempts: data.attempts.present ? data.attempts.value : this.attempts,
+      lastPlayed: data.lastPlayed.present ? data.lastPlayed.value : this.lastPlayed,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LessonRecord(')
+          ..write('lessonId: $lessonId, ')
+          ..write('stars: $stars, ')
+          ..write('bestScore: $bestScore, ')
+          ..write('attempts: $attempts, ')
+          ..write('lastPlayed: $lastPlayed')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(lessonId, stars, bestScore, attempts, lastPlayed);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LessonRecord &&
+          other.lessonId == this.lessonId &&
+          other.stars == this.stars &&
+          other.bestScore == this.bestScore &&
+          other.attempts == this.attempts &&
+          other.lastPlayed == this.lastPlayed);
+}
+
+class LessonRecordsCompanion extends UpdateCompanion<LessonRecord> {
+  final Value<String> lessonId;
+  final Value<int> stars;
+  final Value<double> bestScore;
+  final Value<int> attempts;
+  final Value<DateTime> lastPlayed;
+  final Value<int> rowid;
+  const LessonRecordsCompanion({
+    this.lessonId = const Value.absent(),
+    this.stars = const Value.absent(),
+    this.bestScore = const Value.absent(),
+    this.attempts = const Value.absent(),
+    this.lastPlayed = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LessonRecordsCompanion.insert({
+    required String lessonId,
+    required int stars,
+    required double bestScore,
+    required int attempts,
+    required DateTime lastPlayed,
+    this.rowid = const Value.absent(),
+  }) : lessonId = Value(lessonId),
+       stars = Value(stars),
+       bestScore = Value(bestScore),
+       attempts = Value(attempts),
+       lastPlayed = Value(lastPlayed);
+  static Insertable<LessonRecord> custom({
+    Expression<String>? lessonId,
+    Expression<int>? stars,
+    Expression<double>? bestScore,
+    Expression<int>? attempts,
+    Expression<DateTime>? lastPlayed,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (lessonId != null) 'lesson_id': lessonId,
+      if (stars != null) 'stars': stars,
+      if (bestScore != null) 'best_score': bestScore,
+      if (attempts != null) 'attempts': attempts,
+      if (lastPlayed != null) 'last_played': lastPlayed,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LessonRecordsCompanion copyWith({
+    Value<String>? lessonId,
+    Value<int>? stars,
+    Value<double>? bestScore,
+    Value<int>? attempts,
+    Value<DateTime>? lastPlayed,
+    Value<int>? rowid,
+  }) {
+    return LessonRecordsCompanion(
+      lessonId: lessonId ?? this.lessonId,
+      stars: stars ?? this.stars,
+      bestScore: bestScore ?? this.bestScore,
+      attempts: attempts ?? this.attempts,
+      lastPlayed: lastPlayed ?? this.lastPlayed,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (lessonId.present) {
+      map['lesson_id'] = Variable<String>(lessonId.value);
+    }
+    if (stars.present) {
+      map['stars'] = Variable<int>(stars.value);
+    }
+    if (bestScore.present) {
+      map['best_score'] = Variable<double>(bestScore.value);
+    }
+    if (attempts.present) {
+      map['attempts'] = Variable<int>(attempts.value);
+    }
+    if (lastPlayed.present) {
+      map['last_played'] = Variable<DateTime>(lastPlayed.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LessonRecordsCompanion(')
+          ..write('lessonId: $lessonId, ')
+          ..write('stars: $stars, ')
+          ..write('bestScore: $bestScore, ')
+          ..write('attempts: $attempts, ')
+          ..write('lastPlayed: $lastPlayed, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PracticeDaysTable extends PracticeDays with TableInfo<$PracticeDaysTable, PracticeDay> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PracticeDaysTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _dayMeta = const VerificationMeta('day');
+  @override
+  late final GeneratedColumn<String> day = GeneratedColumn<String>(
+    'day',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _secondsMeta = const VerificationMeta('seconds');
+  @override
+  late final GeneratedColumn<int> seconds = GeneratedColumn<int>(
+    'seconds',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _xpMeta = const VerificationMeta('xp');
+  @override
+  late final GeneratedColumn<int> xp = GeneratedColumn<int>(
+    'xp',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [day, seconds, xp];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'practice_days';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PracticeDay> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('day')) {
+      context.handle(_dayMeta, day.isAcceptableOrUnknown(data['day']!, _dayMeta));
+    } else if (isInserting) {
+      context.missing(_dayMeta);
+    }
+    if (data.containsKey('seconds')) {
+      context.handle(_secondsMeta, seconds.isAcceptableOrUnknown(data['seconds']!, _secondsMeta));
+    } else if (isInserting) {
+      context.missing(_secondsMeta);
+    }
+    if (data.containsKey('xp')) {
+      context.handle(_xpMeta, xp.isAcceptableOrUnknown(data['xp']!, _xpMeta));
+    } else if (isInserting) {
+      context.missing(_xpMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {day};
+  @override
+  PracticeDay map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PracticeDay(
+      day: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}day'])!,
+      seconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}seconds'],
+      )!,
+      xp: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}xp'])!,
+    );
+  }
+
+  @override
+  $PracticeDaysTable createAlias(String alias) {
+    return $PracticeDaysTable(attachedDatabase, alias);
+  }
+}
+
+class PracticeDay extends DataClass implements Insertable<PracticeDay> {
+  final String day;
+  final int seconds;
+  final int xp;
+  const PracticeDay({required this.day, required this.seconds, required this.xp});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['day'] = Variable<String>(day);
+    map['seconds'] = Variable<int>(seconds);
+    map['xp'] = Variable<int>(xp);
+    return map;
+  }
+
+  PracticeDaysCompanion toCompanion(bool nullToAbsent) {
+    return PracticeDaysCompanion(day: Value(day), seconds: Value(seconds), xp: Value(xp));
+  }
+
+  factory PracticeDay.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PracticeDay(
+      day: serializer.fromJson<String>(json['day']),
+      seconds: serializer.fromJson<int>(json['seconds']),
+      xp: serializer.fromJson<int>(json['xp']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'day': serializer.toJson<String>(day),
+      'seconds': serializer.toJson<int>(seconds),
+      'xp': serializer.toJson<int>(xp),
+    };
+  }
+
+  PracticeDay copyWith({String? day, int? seconds, int? xp}) =>
+      PracticeDay(day: day ?? this.day, seconds: seconds ?? this.seconds, xp: xp ?? this.xp);
+  PracticeDay copyWithCompanion(PracticeDaysCompanion data) {
+    return PracticeDay(
+      day: data.day.present ? data.day.value : this.day,
+      seconds: data.seconds.present ? data.seconds.value : this.seconds,
+      xp: data.xp.present ? data.xp.value : this.xp,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PracticeDay(')
+          ..write('day: $day, ')
+          ..write('seconds: $seconds, ')
+          ..write('xp: $xp')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(day, seconds, xp);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PracticeDay &&
+          other.day == this.day &&
+          other.seconds == this.seconds &&
+          other.xp == this.xp);
+}
+
+class PracticeDaysCompanion extends UpdateCompanion<PracticeDay> {
+  final Value<String> day;
+  final Value<int> seconds;
+  final Value<int> xp;
+  final Value<int> rowid;
+  const PracticeDaysCompanion({
+    this.day = const Value.absent(),
+    this.seconds = const Value.absent(),
+    this.xp = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PracticeDaysCompanion.insert({
+    required String day,
+    required int seconds,
+    required int xp,
+    this.rowid = const Value.absent(),
+  }) : day = Value(day),
+       seconds = Value(seconds),
+       xp = Value(xp);
+  static Insertable<PracticeDay> custom({
+    Expression<String>? day,
+    Expression<int>? seconds,
+    Expression<int>? xp,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (day != null) 'day': day,
+      if (seconds != null) 'seconds': seconds,
+      if (xp != null) 'xp': xp,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PracticeDaysCompanion copyWith({
+    Value<String>? day,
+    Value<int>? seconds,
+    Value<int>? xp,
+    Value<int>? rowid,
+  }) {
+    return PracticeDaysCompanion(
+      day: day ?? this.day,
+      seconds: seconds ?? this.seconds,
+      xp: xp ?? this.xp,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (day.present) {
+      map['day'] = Variable<String>(day.value);
+    }
+    if (seconds.present) {
+      map['seconds'] = Variable<int>(seconds.value);
+    }
+    if (xp.present) {
+      map['xp'] = Variable<int>(xp.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PracticeDaysCompanion(')
+          ..write('day: $day, ')
+          ..write('seconds: $seconds, ')
+          ..write('xp: $xp, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SkillRecordsTable extends SkillRecords with TableInfo<$SkillRecordsTable, SkillRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SkillRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<double> value = GeneratedColumn<double>(
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [key, value, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'skill_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SkillRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('key')) {
+      context.handle(_keyMeta, key.isAcceptableOrUnknown(data['key']!, _keyMeta));
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(_valueMeta, value.isAcceptableOrUnknown(data['value']!, _valueMeta));
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {key};
+  @override
+  SkillRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SkillRecord(
+      key: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}key'])!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}value'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SkillRecordsTable createAlias(String alias) {
+    return $SkillRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class SkillRecord extends DataClass implements Insertable<SkillRecord> {
+  final String key;
+  final double value;
+  final DateTime updatedAt;
+  const SkillRecord({required this.key, required this.value, required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['key'] = Variable<String>(key);
+    map['value'] = Variable<double>(value);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  SkillRecordsCompanion toCompanion(bool nullToAbsent) {
+    return SkillRecordsCompanion(key: Value(key), value: Value(value), updatedAt: Value(updatedAt));
+  }
+
+  factory SkillRecord.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SkillRecord(
+      key: serializer.fromJson<String>(json['key']),
+      value: serializer.fromJson<double>(json['value']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'key': serializer.toJson<String>(key),
+      'value': serializer.toJson<double>(value),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  SkillRecord copyWith({String? key, double? value, DateTime? updatedAt}) => SkillRecord(
+    key: key ?? this.key,
+    value: value ?? this.value,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  SkillRecord copyWithCompanion(SkillRecordsCompanion data) {
+    return SkillRecord(
+      key: data.key.present ? data.key.value : this.key,
+      value: data.value.present ? data.value.value : this.value,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SkillRecord(')
+          ..write('key: $key, ')
+          ..write('value: $value, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(key, value, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SkillRecord &&
+          other.key == this.key &&
+          other.value == this.value &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SkillRecordsCompanion extends UpdateCompanion<SkillRecord> {
+  final Value<String> key;
+  final Value<double> value;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const SkillRecordsCompanion({
+    this.key = const Value.absent(),
+    this.value = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SkillRecordsCompanion.insert({
+    required String key,
+    required double value,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : key = Value(key),
+       value = Value(value),
+       updatedAt = Value(updatedAt);
+  static Insertable<SkillRecord> custom({
+    Expression<String>? key,
+    Expression<double>? value,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (key != null) 'key': key,
+      if (value != null) 'value': value,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SkillRecordsCompanion copyWith({
+    Value<String>? key,
+    Value<double>? value,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return SkillRecordsCompanion(
+      key: key ?? this.key,
+      value: value ?? this.value,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<double>(value.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SkillRecordsCompanion(')
+          ..write('key: $key, ')
+          ..write('value: $value, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1186,6 +1994,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CustomTuningsTable customTunings = $CustomTuningsTable(this);
   late final $UserSongsTable userSongs = $UserSongsTable(this);
   late final $CustomChordsTable customChords = $CustomChordsTable(this);
+  late final $LessonRecordsTable lessonRecords = $LessonRecordsTable(this);
+  late final $PracticeDaysTable practiceDays = $PracticeDaysTable(this);
+  late final $SkillRecordsTable skillRecords = $SkillRecordsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1196,6 +2007,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     customTunings,
     userSongs,
     customChords,
+    lessonRecords,
+    practiceDays,
+    skillRecords,
   ];
 }
 
@@ -1881,6 +2695,444 @@ typedef $$CustomChordsTableProcessedTableManager =
       CustomChord,
       PrefetchHooks Function()
     >;
+typedef $$LessonRecordsTableCreateCompanionBuilder = LessonRecordsCompanion Function({
+  required String lessonId,
+  required int stars,
+  required double bestScore,
+  required int attempts,
+  required DateTime lastPlayed,
+  Value<int> rowid,
+});
+typedef $$LessonRecordsTableUpdateCompanionBuilder = LessonRecordsCompanion Function({
+  Value<String> lessonId,
+  Value<int> stars,
+  Value<double> bestScore,
+  Value<int> attempts,
+  Value<DateTime> lastPlayed,
+  Value<int> rowid,
+});
+
+class $$LessonRecordsTableFilterComposer extends Composer<_$AppDatabase, $LessonRecordsTable> {
+  $$LessonRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get lessonId =>
+      $composableBuilder(column: $table.lessonId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get stars =>
+      $composableBuilder(column: $table.stars, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get bestScore =>
+      $composableBuilder(column: $table.bestScore, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get attempts =>
+      $composableBuilder(column: $table.attempts, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastPlayed =>
+      $composableBuilder(column: $table.lastPlayed, builder: (column) => ColumnFilters(column));
+}
+
+class $$LessonRecordsTableOrderingComposer extends Composer<_$AppDatabase, $LessonRecordsTable> {
+  $$LessonRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get lessonId =>
+      $composableBuilder(column: $table.lessonId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get stars =>
+      $composableBuilder(column: $table.stars, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get bestScore =>
+      $composableBuilder(column: $table.bestScore, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get attempts =>
+      $composableBuilder(column: $table.attempts, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastPlayed =>
+      $composableBuilder(column: $table.lastPlayed, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LessonRecordsTableAnnotationComposer extends Composer<_$AppDatabase, $LessonRecordsTable> {
+  $$LessonRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get lessonId =>
+      $composableBuilder(column: $table.lessonId, builder: (column) => column);
+
+  GeneratedColumn<int> get stars =>
+      $composableBuilder(column: $table.stars, builder: (column) => column);
+
+  GeneratedColumn<double> get bestScore =>
+      $composableBuilder(column: $table.bestScore, builder: (column) => column);
+
+  GeneratedColumn<int> get attempts =>
+      $composableBuilder(column: $table.attempts, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastPlayed =>
+      $composableBuilder(column: $table.lastPlayed, builder: (column) => column);
+}
+
+class $$LessonRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LessonRecordsTable,
+          LessonRecord,
+          $$LessonRecordsTableFilterComposer,
+          $$LessonRecordsTableOrderingComposer,
+          $$LessonRecordsTableAnnotationComposer,
+          $$LessonRecordsTableCreateCompanionBuilder,
+          $$LessonRecordsTableUpdateCompanionBuilder,
+          (LessonRecord, BaseReferences<_$AppDatabase, $LessonRecordsTable, LessonRecord>),
+          LessonRecord,
+          PrefetchHooks Function()
+        > {
+  $$LessonRecordsTableTableManager(_$AppDatabase db, $LessonRecordsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () => $$LessonRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LessonRecordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LessonRecordsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> lessonId = const Value.absent(),
+                Value<int> stars = const Value.absent(),
+                Value<double> bestScore = const Value.absent(),
+                Value<int> attempts = const Value.absent(),
+                Value<DateTime> lastPlayed = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LessonRecordsCompanion(
+                lessonId: lessonId,
+                stars: stars,
+                bestScore: bestScore,
+                attempts: attempts,
+                lastPlayed: lastPlayed,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String lessonId,
+                required int stars,
+                required double bestScore,
+                required int attempts,
+                required DateTime lastPlayed,
+                Value<int> rowid = const Value.absent(),
+              }) => LessonRecordsCompanion.insert(
+                lessonId: lessonId,
+                stars: stars,
+                bestScore: bestScore,
+                attempts: attempts,
+                lastPlayed: lastPlayed,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LessonRecordsTable, LessonRecord>(table),
+                  BaseReferences<_$AppDatabase, $LessonRecordsTable, LessonRecord>(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LessonRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LessonRecordsTable,
+      LessonRecord,
+      $$LessonRecordsTableFilterComposer,
+      $$LessonRecordsTableOrderingComposer,
+      $$LessonRecordsTableAnnotationComposer,
+      $$LessonRecordsTableCreateCompanionBuilder,
+      $$LessonRecordsTableUpdateCompanionBuilder,
+      (LessonRecord, BaseReferences<_$AppDatabase, $LessonRecordsTable, LessonRecord>),
+      LessonRecord,
+      PrefetchHooks Function()
+    >;
+typedef $$PracticeDaysTableCreateCompanionBuilder = PracticeDaysCompanion Function({
+  required String day,
+  required int seconds,
+  required int xp,
+  Value<int> rowid,
+});
+typedef $$PracticeDaysTableUpdateCompanionBuilder = PracticeDaysCompanion Function({
+  Value<String> day,
+  Value<int> seconds,
+  Value<int> xp,
+  Value<int> rowid,
+});
+
+class $$PracticeDaysTableFilterComposer extends Composer<_$AppDatabase, $PracticeDaysTable> {
+  $$PracticeDaysTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get seconds =>
+      $composableBuilder(column: $table.seconds, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get xp =>
+      $composableBuilder(column: $table.xp, builder: (column) => ColumnFilters(column));
+}
+
+class $$PracticeDaysTableOrderingComposer extends Composer<_$AppDatabase, $PracticeDaysTable> {
+  $$PracticeDaysTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get seconds =>
+      $composableBuilder(column: $table.seconds, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get xp =>
+      $composableBuilder(column: $table.xp, builder: (column) => ColumnOrderings(column));
+}
+
+class $$PracticeDaysTableAnnotationComposer extends Composer<_$AppDatabase, $PracticeDaysTable> {
+  $$PracticeDaysTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => column);
+
+  GeneratedColumn<int> get seconds =>
+      $composableBuilder(column: $table.seconds, builder: (column) => column);
+
+  GeneratedColumn<int> get xp => $composableBuilder(column: $table.xp, builder: (column) => column);
+}
+
+class $$PracticeDaysTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PracticeDaysTable,
+          PracticeDay,
+          $$PracticeDaysTableFilterComposer,
+          $$PracticeDaysTableOrderingComposer,
+          $$PracticeDaysTableAnnotationComposer,
+          $$PracticeDaysTableCreateCompanionBuilder,
+          $$PracticeDaysTableUpdateCompanionBuilder,
+          (PracticeDay, BaseReferences<_$AppDatabase, $PracticeDaysTable, PracticeDay>),
+          PracticeDay,
+          PrefetchHooks Function()
+        > {
+  $$PracticeDaysTableTableManager(_$AppDatabase db, $PracticeDaysTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () => $$PracticeDaysTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$PracticeDaysTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PracticeDaysTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> day = const Value.absent(),
+            Value<int> seconds = const Value.absent(),
+            Value<int> xp = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) => PracticeDaysCompanion(day: day, seconds: seconds, xp: xp, rowid: rowid),
+          createCompanionCallback: ({
+            required String day,
+            required int seconds,
+            required int xp,
+            Value<int> rowid = const Value.absent(),
+          }) => PracticeDaysCompanion.insert(day: day, seconds: seconds, xp: xp, rowid: rowid),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PracticeDaysTable, PracticeDay>(table),
+                  BaseReferences<_$AppDatabase, $PracticeDaysTable, PracticeDay>(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PracticeDaysTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PracticeDaysTable,
+      PracticeDay,
+      $$PracticeDaysTableFilterComposer,
+      $$PracticeDaysTableOrderingComposer,
+      $$PracticeDaysTableAnnotationComposer,
+      $$PracticeDaysTableCreateCompanionBuilder,
+      $$PracticeDaysTableUpdateCompanionBuilder,
+      (PracticeDay, BaseReferences<_$AppDatabase, $PracticeDaysTable, PracticeDay>),
+      PracticeDay,
+      PrefetchHooks Function()
+    >;
+typedef $$SkillRecordsTableCreateCompanionBuilder = SkillRecordsCompanion Function({
+  required String key,
+  required double value,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$SkillRecordsTableUpdateCompanionBuilder = SkillRecordsCompanion Function({
+  Value<String> key,
+  Value<double> value,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$SkillRecordsTableFilterComposer extends Composer<_$AppDatabase, $SkillRecordsTable> {
+  $$SkillRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$SkillRecordsTableOrderingComposer extends Composer<_$AppDatabase, $SkillRecordsTable> {
+  $$SkillRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SkillRecordsTableAnnotationComposer extends Composer<_$AppDatabase, $SkillRecordsTable> {
+  $$SkillRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<double> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$SkillRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SkillRecordsTable,
+          SkillRecord,
+          $$SkillRecordsTableFilterComposer,
+          $$SkillRecordsTableOrderingComposer,
+          $$SkillRecordsTableAnnotationComposer,
+          $$SkillRecordsTableCreateCompanionBuilder,
+          $$SkillRecordsTableUpdateCompanionBuilder,
+          (SkillRecord, BaseReferences<_$AppDatabase, $SkillRecordsTable, SkillRecord>),
+          SkillRecord,
+          PrefetchHooks Function()
+        > {
+  $$SkillRecordsTableTableManager(_$AppDatabase db, $SkillRecordsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () => $$SkillRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$SkillRecordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SkillRecordsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> key = const Value.absent(),
+            Value<double> value = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) => SkillRecordsCompanion(key: key, value: value, updatedAt: updatedAt, rowid: rowid),
+          createCompanionCallback:
+              ({
+                required String key,
+                required double value,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SkillRecordsCompanion.insert(
+                key: key,
+                value: value,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SkillRecordsTable, SkillRecord>(table),
+                  BaseReferences<_$AppDatabase, $SkillRecordsTable, SkillRecord>(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SkillRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SkillRecordsTable,
+      SkillRecord,
+      $$SkillRecordsTableFilterComposer,
+      $$SkillRecordsTableOrderingComposer,
+      $$SkillRecordsTableAnnotationComposer,
+      $$SkillRecordsTableCreateCompanionBuilder,
+      $$SkillRecordsTableUpdateCompanionBuilder,
+      (SkillRecord, BaseReferences<_$AppDatabase, $SkillRecordsTable, SkillRecord>),
+      SkillRecord,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1893,4 +3145,10 @@ class $AppDatabaseManager {
   $$UserSongsTableTableManager get userSongs => $$UserSongsTableTableManager(_db, _db.userSongs);
   $$CustomChordsTableTableManager get customChords =>
       $$CustomChordsTableTableManager(_db, _db.customChords);
+  $$LessonRecordsTableTableManager get lessonRecords =>
+      $$LessonRecordsTableTableManager(_db, _db.lessonRecords);
+  $$PracticeDaysTableTableManager get practiceDays =>
+      $$PracticeDaysTableTableManager(_db, _db.practiceDays);
+  $$SkillRecordsTableTableManager get skillRecords =>
+      $$SkillRecordsTableTableManager(_db, _db.skillRecords);
 }

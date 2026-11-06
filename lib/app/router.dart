@@ -5,6 +5,7 @@ import 'package:fretlight/features/chords/presentation/chord_detail_screen.dart'
 import 'package:fretlight/features/chords/presentation/chords_screen.dart';
 import 'package:fretlight/features/gallery/presentation/gallery_screen.dart';
 import 'package:fretlight/features/identify/presentation/identify_screen.dart';
+import 'package:fretlight/features/learn/presentation/learn_screen.dart';
 import 'package:fretlight/features/metronome/presentation/metronome_screen.dart';
 import 'package:fretlight/features/practice/presentation/practice_screen.dart';
 import 'package:fretlight/features/settings/presentation/settings_screen.dart';
@@ -15,13 +16,16 @@ import 'package:go_router/go_router.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
-    initialLocation: '/tune',
+    initialLocation: '/learn',
     routes: [
       // One branch per tab; IndexedStack keeps each tab's state (e.g. a
       // running metronome) alive while you switch to another tab.
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => StageShell(shell: shell),
         branches: [
+          StatefulShellBranch(
+            routes: [GoRoute(path: '/learn', builder: (context, state) => const LearnScreen())],
+          ),
           StatefulShellBranch(
             routes: [GoRoute(path: '/tune', builder: (context, state) => const TunerScreen())],
           ),

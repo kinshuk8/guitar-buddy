@@ -14,7 +14,19 @@ import 'package:fretlight/core/storage/app_database.dart';
 /// background; a failed write is logged and the in-memory value still holds
 /// for this session.
 final class LocalStore {
-  LocalStore._(this._db, this._settings, this._favorites, this._tunings, this._songs, this._chords);
+  LocalStore._(
+    this._db,
+    this._settings,
+    this._favorites,
+    this._tunings,
+    this._songs,
+    this._chords, {
+    Map<String, StoredLesson>? lessons,
+    Map<String, StoredDay>? days,
+    Map<String, double>? skills,
+  }) : _lessons = lessons ?? {},
+       _days = days ?? {},
+       _skills = skills ?? {};
 
   /// Store with no database, for tests and previews.
   LocalStore.memory({
@@ -23,9 +35,20 @@ final class LocalStore {
     List<Tuning>? customTunings,
     Map<String, String>? userSongs,
     Map<String, CustomChordData>? customChords,
-  }) : this._(null, {...?settings}, {...?favorites}, [...?customTunings], {...?userSongs}, {
-         ...?customChords,
-       });
+    Map<String, StoredLesson>? lessons,
+    Map<String, StoredDay>? days,
+    Map<String, double>? skills,
+  }) : this._(
+         null,
+         {...?settings},
+         {...?favorites},
+         [...?customTunings],
+         {...?userSongs},
+         {...?customChords},
+         lessons: {...?lessons},
+         days: {...?days},
+         skills: {...?skills},
+       );
 
   static Future<LocalStore> open(AppDatabase db) async {
     final settings = await db.select(db.settings).get();
@@ -41,6 +64,9 @@ final class LocalStore {
     final chords = await (db.select(
       db.customChords,
     )..orderBy([(c) => OrderingTerm.asc(c.addedAt)])).get();
+    final lessons = await db.select(db.lessonRecords).get();
+    final days = await db.select(db.practiceDays).get();
+    final skills = await db.select(db.skillRecords).get();
     return LocalStore._(
       db,
       {for (final s in settings) s.key: s.value},
@@ -48,6 +74,17 @@ final class LocalStore {
       [for (final t in tunings) ?_tuningFromRow(t)],
       {for (final s in songs) s.id: s.source},
       {for (final c in chords) c.id: ?CustomChordData.tryParse(c.name, c.frets)},
+      lessons: {
+        for (final l in lessons)
+          l.lessonId: StoredLesson(
+            stars: l.stars,
+            bestScore: l.bestScore,
+            attempts: l.attempts,
+            lastPlayed: l.lastPlayed,
+          ),
+      },
+      days: {for (final d in days) d.day: StoredDay(seconds: d.seconds, xp: d.xp)},
+      skills: {for (final k in skills) k.key: k.value},
     );
   }
 
@@ -61,6 +98,67 @@ final class LocalStore {
 
   /// User chord shapes, oldest first.
   final Map<String, CustomChordData> _chords;
+
+  final Map<String, StoredLesson> _lessons;
+  final Map<String, StoredDay> _days;
+  final Map<String, double> _skills;
+
+  Map<String, StoredLesson> get lessons => Map.unmodifiable(_lessons);
+  Map<String, StoredDay> get days => Map.unmodifiable(_days);
+  Map<String, double> get skills => Map.unmodifiable(_skills);
+
+  void putLesson(String id, StoredLesson r) {
+    _lessons[id] = r;
+    _write(
+      (db) => db
+          .into(db.lessonRecords)
+          .insertOnConflictUpdate(
+            LessonRecordsCompanion.insert(
+              lessonId: id,
+              stars: r.stars,
+              bestScore: r.bestScore,
+              attempts: r.attempts,
+              lastPlayed: r.lastPlayed,
+            ),
+          ),
+    );
+  }
+
+  void putDay(String day, StoredDay d) {
+    _days[day] = d;
+    _write(
+      (db) => db
+          .into(db.practiceDays)
+          .insertOnConflictUpdate(
+            PracticeDaysCompanion.insert(day: day, seconds: d.seconds, xp: d.xp),
+          ),
+    );
+  }
+
+  void putSkill(String key, double value) {
+    _skills[key] = value;
+    _write(
+      (db) => db
+          .into(db.skillRecords)
+          .insertOnConflictUpdate(
+            SkillRecordsCompanion.insert(key: key, value: value, updatedAt: DateTime.now()),
+          ),
+    );
+  }
+
+  /// Forgets all Learn progress (Settings → Reset progress).
+  void clearLearning() {
+    _lessons.clear();
+    _days.clear();
+    _skills.clear();
+    _write(
+      (db) => db.transaction<void>(() async {
+        await db.delete(db.lessonRecords).go();
+        await db.delete(db.practiceDays).go();
+        await db.delete(db.skillRecords).go();
+      }),
+    );
+  }
 
   Map<String, CustomChordData> get customChords => Map.unmodifiable(_chords);
 
@@ -189,6 +287,31 @@ final class LocalStore {
 final localStoreProvider = Provider<LocalStore>(
   (ref) => throw UnimplementedError('localStoreProvider must be overridden'),
 );
+
+/// A Learn lesson's best result, as stored.
+@immutable
+final class StoredLesson {
+  const StoredLesson({
+    required this.stars,
+    required this.bestScore,
+    required this.attempts,
+    required this.lastPlayed,
+  });
+
+  final int stars;
+  final double bestScore;
+  final int attempts;
+  final DateTime lastPlayed;
+}
+
+/// One day's practice, as stored.
+@immutable
+final class StoredDay {
+  const StoredDay({required this.seconds, required this.xp});
+
+  final int seconds;
+  final int xp;
+}
 
 /// A chord shape the user drew.
 @immutable

@@ -19,6 +19,7 @@ final class Destination {
 }
 
 const destinations = [
+  Destination('Learn', Icons.school_rounded, '/learn'),
   Destination('Tune', Icons.tune_rounded, '/tune'),
   Destination('Identify', Icons.graphic_eq_rounded, '/identify'),
   Destination('Chords', Icons.grid_view_rounded, '/chords'),

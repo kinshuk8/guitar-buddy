@@ -24,6 +24,9 @@ Future<FakeAudioInputSource> pumpApp(
   addTearDown(tester.view.reset);
   await tester.pumpWidget(devices.app());
   await tester.pump();
+  // The app opens on Learn; the tuner is the next tab.
+  await tester.tap(find.bySemanticsLabel('Tune'));
+  await tester.pump();
   // Let the controller's async start (permission → start → isolate spawn) finish.
   await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
   await tester.pump();

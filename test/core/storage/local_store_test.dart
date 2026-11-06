@@ -140,4 +140,64 @@ void main() {
     await store.flushed;
     expect((await LocalStore.open(db)).customChords.keys, ['c']);
   });
+
+  test('learning progress survives a reopen and can be reset', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final store = await LocalStore.open(db)
+      ..putLesson(
+        'b.em',
+        StoredLesson(stars: 2, bestScore: 0.8, attempts: 3, lastPlayed: DateTime(2026, 11, 6)),
+      )
+      ..putDay('2026-11-06', const StoredDay(seconds: 420, xp: 60))
+      ..putSkill('chord:Em', 42.5)
+      ..putSkill('chord:Em', 50);
+    await store.flushed;
+    final again = await LocalStore.open(db);
+    expect(again.lessons['b.em']!.stars, 2);
+    expect(again.lessons['b.em']!.attempts, 3);
+    expect(again.days['2026-11-06']!.xp, 60);
+    expect(again.skills, {'chord:Em': 50});
+
+    again
+      ..setSetting('tuner.a4', '440.0')
+      ..clearLearning();
+    await again.flushed;
+    final cleared = await LocalStore.open(db);
+    expect(cleared.lessons, isEmpty);
+    expect(cleared.days, isEmpty);
+    expect(cleared.skills, isEmpty);
+    expect(cleared.setting('tuner.a4'), '440.0', reason: 'only learning is reset');
+  });
+
+  test('upgrading a version-3 database adds learning progress and keeps chords', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) => raw
+          ..execute('CREATE TABLE settings (key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)')
+          ..execute(
+            'CREATE TABLE favorite_chords (symbol TEXT NOT NULL PRIMARY KEY, added_at INTEGER NOT NULL)',
+          )
+          ..execute(
+            'CREATE TABLE custom_tunings (id TEXT NOT NULL PRIMARY KEY, name TEXT NOT NULL, '
+            'notes TEXT NOT NULL, position INTEGER NOT NULL)',
+          )
+          ..execute(
+            'CREATE TABLE user_songs (id TEXT NOT NULL PRIMARY KEY, source TEXT NOT NULL, added_at INTEGER NOT NULL)',
+          )
+          ..execute(
+            'CREATE TABLE custom_chords (id TEXT NOT NULL PRIMARY KEY, name TEXT NOT NULL, '
+            'frets TEXT NOT NULL, added_at INTEGER NOT NULL)',
+          )
+          ..execute("INSERT INTO custom_chords VALUES ('c1', 'Gadd9', '3,2,0,2,0,3', 0)")
+          ..execute('PRAGMA user_version = 3'),
+      ),
+    );
+    addTearDown(db.close);
+    final store = await LocalStore.open(db);
+    expect(store.customChords.keys, ['c1']);
+    store.putDay('2026-11-06', const StoredDay(seconds: 60, xp: 20));
+    await store.flushed;
+    expect((await LocalStore.open(db)).days.keys, ['2026-11-06']);
+  });
 }

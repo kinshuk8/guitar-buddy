@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fretlight/app/version.dart';
@@ -7,6 +9,7 @@ import 'package:fretlight/core/design/tokens.dart';
 import 'package:fretlight/core/widgets/glass.dart';
 import 'package:fretlight/core/widgets/glass_controls.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
+import 'package:fretlight/features/learn/application/progress_controller.dart';
 import 'package:fretlight/features/progressions/data/progression_pack.dart';
 import 'package:fretlight/features/settings/application/appearance.dart';
 import 'package:fretlight/features/settings/application/sensitivity.dart';
@@ -70,6 +73,18 @@ class SettingsScreen extends ConsumerWidget {
               Text(
                 '${sensitivity.help} The meter on the Tune, Identify and Practice screens shows '
                 'whether the microphone hears you: the line is where it starts listening.',
+                style: t.caption.copyWith(color: c.textTertiary),
+              ),
+              const SectionLabel('Learning'),
+              StageButton.glass(
+                label: 'Reset learning progress',
+                icon: Icons.restart_alt_rounded,
+                expand: true,
+                onPressed: () => _confirmReset(context, ref),
+              ),
+              const SizedBox(height: Space.sm),
+              Text(
+                'Clears stars, XP, streaks and chord mastery. Your songs, chords and settings stay.',
                 style: t.caption.copyWith(color: c.textTertiary),
               ),
               const SectionLabel('Privacy'),
@@ -148,4 +163,46 @@ class _Toggle extends StatelessWidget {
       ),
     );
   }
+}
+
+void _confirmReset(BuildContext context, WidgetRef ref) {
+  unawaited(
+    showGlassSheet<void>(
+      context,
+      builder: (sheet) {
+        final t = sheet.stageText;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Reset learning progress?', style: t.title),
+              const SizedBox(height: Space.sm),
+              Text(
+                'Every lesson’s stars, your XP, level, streak, chord mastery and personal bests '
+                'are cleared. This can’t be undone.',
+                style: t.body,
+              ),
+              const SizedBox(height: Space.lg),
+              StageButton(
+                label: 'Reset progress',
+                expand: true,
+                onPressed: () {
+                  ref.read(progressProvider.notifier).reset();
+                  Navigator.of(sheet).pop();
+                },
+              ),
+              const SizedBox(height: Space.md),
+              StageButton.glass(
+                label: 'Keep it',
+                expand: true,
+                onPressed: () => Navigator.of(sheet).pop(),
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
 }

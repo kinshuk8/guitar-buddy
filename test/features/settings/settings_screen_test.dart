@@ -14,6 +14,8 @@ void main() {
     final store = LocalStore.memory();
     await tester.pumpWidget(TestDevices(store: store).app());
     await tester.pump();
+    await tester.tap(find.bySemanticsLabel('Tune'));
+    await tester.pump();
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
     await tester.pump();
 
@@ -21,7 +23,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Settings'), findsOneWidget);
     expect(find.textContaining('never connects to the internet'), findsOneWidget);
-    expect(find.textContaining('Chordonomicon'), findsOneWidget);
 
     await tester.tap(find.bySemanticsLabel('Light'));
     await tester.pumpAndSettle();
@@ -32,10 +33,45 @@ void main() {
     await tester.pumpAndSettle();
     expect(store.setting('appearance.leftHanded'), 'true');
 
+    await tester.scrollUntilVisible(find.textContaining('Chordonomicon'), 200);
+    expect(find.textContaining('Chordonomicon'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Licences'), 200);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Licences'));
     await tester.pumpAndSettle();
     expect(find.byType(LicensePage), findsOneWidget);
+  });
+
+  testWidgets('reset learning progress asks first, then clears only learning', (tester) async {
+    tester.view.physicalSize = const Size(1206, 2622);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final store = LocalStore.memory(
+      settings: {'appearance.theme': 'dark'},
+      days: {'2026-11-06': const StoredDay(seconds: 600, xp: 80)},
+      skills: {'chord:Em': 50},
+    );
+    await tester.pumpWidget(TestDevices(store: store).app());
+    await tester.pump();
+    await tester.tap(find.bySemanticsLabel('Tune'));
+    await tester.pump();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+    await tester.pump();
+    await tester.tap(find.bySemanticsLabel('Settings'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Reset learning progress'), 200);
+    await tester.tap(find.text('Reset learning progress'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Keep it'));
+    await tester.pumpAndSettle();
+    expect(store.days, isNotEmpty, reason: 'cancel keeps it');
+
+    await tester.tap(find.text('Reset learning progress'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reset progress'));
+    await tester.pumpAndSettle();
+    expect(store.days, isEmpty);
+    expect(store.skills, isEmpty);
+    expect(store.setting('appearance.theme'), 'dark');
   });
 }

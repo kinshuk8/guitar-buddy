@@ -57,7 +57,52 @@ class CustomChords extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [Settings, FavoriteChords, CustomTunings, UserSongs, CustomChords])
+/// The best result in each Learn lesson.
+class LessonRecords extends Table {
+  TextColumn get lessonId => text()();
+  IntColumn get stars => integer()();
+  RealColumn get bestScore => real()();
+  IntColumn get attempts => integer()();
+  DateTimeColumn get lastPlayed => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {lessonId};
+}
+
+/// Practice per calendar day (`yyyy-mm-dd`, local time): for streaks, the
+/// daily goal and XP.
+class PracticeDays extends Table {
+  TextColumn get day => text()();
+  IntColumn get seconds => integer()();
+  IntColumn get xp => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {day};
+}
+
+/// Named numbers the Learn tab tracks: chord mastery (`chord:G`), personal
+/// bests (`race:C|G`).
+class SkillRecords extends Table {
+  TextColumn get key => text()();
+  RealColumn get value => real()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
+@DriftDatabase(
+  tables: [
+    Settings,
+    FavoriteChords,
+    CustomTunings,
+    UserSongs,
+    CustomChords,
+    LessonRecords,
+    PracticeDays,
+    SkillRecords,
+  ],
+)
 final class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
@@ -71,9 +116,9 @@ final class AppDatabase extends _$AppDatabase {
   );
 
   /// 1: settings, favourites, custom tunings (M3). 2: user songs (M6).
-  /// 3: custom chords.
+  /// 3: custom chords. 4: Learn progress (lessons, days, skills).
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -81,6 +126,11 @@ final class AppDatabase extends _$AppDatabase {
     onUpgrade: (m, from, to) async {
       if (from < 2) await m.createTable(userSongs);
       if (from < 3) await m.createTable(customChords);
+      if (from < 4) {
+        await m.createTable(lessonRecords);
+        await m.createTable(practiceDays);
+        await m.createTable(skillRecords);
+      }
     },
   );
 }

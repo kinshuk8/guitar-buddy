@@ -21,14 +21,14 @@ Widget _host({required ThemeData theme, bool reducedMotion = false}) => TestDevi
 );
 
 void main() {
-  testWidgets('app boots into the shell with five tabs', (tester) async {
+  testWidgets('app boots into Learn, in a shell with six tabs', (tester) async {
     await tester.pumpWidget(TestDevices().app());
     await tester.pumpAndSettle();
     // Every tab is labelled for screen readers; only the active one shows text.
-    for (final label in ['Tune', 'Identify', 'Chords', 'Tempo', 'Songs']) {
+    for (final label in ['Learn', 'Tune', 'Identify', 'Chords', 'Tempo', 'Songs']) {
       expect(find.bySemanticsLabel(label), findsOneWidget, reason: label);
     }
-    expect(find.text('Tune'), findsOneWidget);
+    expect(find.text('Learn'), findsWidgets);
     // The gallery is a debug-only route (linked from the bottom of Songs).
     final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
     unawaited(container.read(routerProvider).push('/gallery'));
