@@ -147,6 +147,10 @@ final class IdentifyController extends Notifier<IdentifyState> {
       level.report(e.rmsDb, chordFloor.gateDb);
       final before = smoother.reading;
       final after = smoother.update(e);
+      // A strum's first frames are only part of it (the low strings arrive
+      // first): keep showing the last chord until the new one settles,
+      // rather than flashing a half-heard name.
+      if (after != null && !after.settled && !after.fading) return;
       if (!identical(before, after)) state = state.copyWith(chord: () => after);
     });
     _pcm = pcm.listen(worker.push);

@@ -285,4 +285,91 @@ void main() {
       expect(frames.last.$2?.chord?.symbol(), 'C');
     });
   });
+
+  group('a close headset mic and a slow strum (EarPods by the soundhole)', () {
+    /// Strings one by one, [gapMs] apart, louder at the bass end by
+    /// [gainDb] (a mic near the soundhole), through a voice headset's band
+    /// (high-pass ~150 Hz, low-pass ~7 kHz).
+    Float32List closeMicStrum(List<int?> frets, {int gapMs = 45}) {
+      const gainDb = [12.0, 9.0, 5.0, 0.0, -4.0, -6.0];
+      final out = Float32List((2.2 * sr).round());
+      var step = 0;
+      for (var s = 0; s < 6; s++) {
+        final f = frets[s];
+        if (f == null) continue;
+        final one = List<double?>.filled(6, null)..[s] = pm.hz(Tuning.standard.noteAt(s, f));
+        final pcm = renderStrum(stringHz: one, sampleRate: sr, seconds: 2.2, peak: 0.3);
+        final g = 2 * math.pow(10, gainDb[s] / 20);
+        final at = step * gapMs * sr ~/ 1000;
+        for (var i = 0; i + at < out.length && i < pcm.length; i++) {
+          out[i + at] += g * pcm[i];
+        }
+        step++;
+      }
+      return _band(_band(out, 150, high: true), 7000, high: false);
+    }
+
+    List<String?> shown(Float32List pcm) => [
+      for (final (_, r) in run(
+        Float32List.fromList([...Float32List(sr ~/ 2), ...pcm]),
+        sensitivity: Sensitivity.normal,
+      ))
+        if (r != null && r.settled && !r.fading) r.chord?.symbol(),
+    ];
+
+    test('minor chords end up minor, not a power chord, once the third arrives', () {
+      for (final (name, frets) in [
+        ('Em', [0, 2, 2, 0, 0, 0]),
+        ('Am', [null, 0, 2, 2, 1, 0]),
+        ('Dm', [null, null, 0, 2, 3, 1]),
+      ]) {
+        final names = shown(closeMicStrum(frets));
+        final late = names.skip(names.length ~/ 3).toList();
+        final right = late.where((n) => n == name).length;
+        expect(right / late.length, greaterThan(0.9), reason: '$name: $names');
+      }
+    });
+
+    test('a real power chord (no third) still reads as one', () {
+      for (final (name, frets) in [
+        ('E5', [0, 2, 2, null, null, null]),
+        ('A5', [null, 0, 2, 2, null, null]),
+      ]) {
+        final names = shown(closeMicStrum(frets, gapMs: 30));
+        final late = names.skip(names.length ~/ 3).toList();
+        expect(
+          late.where((n) => n == name).length / late.length,
+          greaterThan(0.9),
+          reason: '$name: $names',
+        );
+      }
+    });
+  });
+}
+
+/// A 2nd-order (RBJ) high- or low-pass, Q 0.707.
+Float32List _band(Float32List x, double hz, {required bool high}) {
+  final w = 2 * math.pi * hz / sr;
+  final alpha = math.sin(w) / (2 * 0.707);
+  final c = math.cos(w);
+  final a0 = 1 + alpha;
+  final b0 = (high ? (1 + c) / 2 : (1 - c) / 2) / a0;
+  final b1 = (high ? -(1 + c) : (1 - c)) / a0;
+  final b2 = b0;
+  final a1 = -2 * c / a0;
+  final a2 = (1 - alpha) / a0;
+  final y = Float32List(x.length);
+  var x1 = 0.0;
+  var x2 = 0.0;
+  var y1 = 0.0;
+  var y2 = 0.0;
+  for (var i = 0; i < x.length; i++) {
+    final v = b0 * x[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+    x2 = x1;
+    x1 = x[i];
+    y2 = y1;
+    y1 = v;
+    y[i] = v;
+  }
+  return y;
 }

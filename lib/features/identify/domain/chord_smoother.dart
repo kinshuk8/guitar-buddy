@@ -232,7 +232,10 @@ final class ChordSmoother {
 
     final ranked = _avg.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
     var leader = ranked.first;
-    if (_shown != null && _sinceOnset > _settleFrames && _family(leader.key, _shown!)) {
+    if (_shown != null &&
+        _sinceOnset > _settleFrames &&
+        _family(leader.key, _shown!) &&
+        !_completes(leader.key, _shown!)) {
       leader = MapEntry(_shown!, _avg[_shown!] ?? leader.value);
     }
     if (_shown == null || leader.key == _shown) {
@@ -289,6 +292,19 @@ final class ChordSmoother {
     }
     return null;
   }
+
+  /// Whether [leader] is [shown] power chord with its third arrived: E5 → Em.
+  ///
+  /// The family lock stops a ringing chord being renamed as it fades (D
+  /// shouldn't become D5 when the high E dies away). The reverse is a slow
+  /// strum, or a close mic loud on the low strings: root and fifth arrive
+  /// first and the third (Em's open G, Am's C on the B string) a moment
+  /// later. A power chord shown then must be allowed to become the triad,
+  /// or Em reads E5 for as long as it rings.
+  static bool _completes(Chord leader, Chord shown) =>
+      shown.quality == ChordQuality.power &&
+      leader.root == shown.root &&
+      leader.quality.required.any((i) => i == 3 || i == 4);
 
   /// Same root, and one chord's notes contain the other's (C ⊂ Cmaj7,
   /// C5 ⊂ C): variations of one chord rather than rivals.
