@@ -18,6 +18,7 @@ import 'package:fretlight/features/learn/domain/curriculum.dart';
 import 'package:fretlight/features/learn/domain/games.dart';
 import 'package:fretlight/features/learn/presentation/learn_widgets.dart';
 import 'package:fretlight/features/learn/presentation/lesson_games.dart';
+import 'package:fretlight/features/tuner/presentation/tuner_button.dart';
 
 /// One lesson, full screen: intro, its steps, then the result.
 class LessonScreen extends ConsumerStatefulWidget {
@@ -66,6 +67,46 @@ class _LessonScreenState extends ConsumerState<LessonScreen> with SingleTickerPr
     super.dispose();
   }
 
+  /// Closes the lesson. Mid-game it asks first: an accidental tap on the
+  /// X shouldn't throw away a half-played lesson.
+  Future<void> _close({required bool leaving}) async {
+    if (!leaving) {
+      Navigator.of(context).pop();
+      return;
+    }
+    final leave = await showGlassSheet<bool>(
+      context,
+      builder: (sheet) => Padding(
+        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Leave this lesson?', style: sheet.stageText.title),
+            const SizedBox(height: Space.sm),
+            Text(
+              'This attempt won’t be scored. Your stars from earlier attempts stay.',
+              style: sheet.stageText.body,
+            ),
+            const SizedBox(height: Space.lg),
+            StageButton(
+              label: 'Keep playing',
+              expand: true,
+              onPressed: () => Navigator.of(sheet).pop(false),
+            ),
+            const SizedBox(height: Space.sm),
+            StageButton.glass(
+              label: 'Leave lesson',
+              expand: true,
+              onPressed: () => Navigator.of(sheet).pop(true),
+            ),
+          ],
+        ),
+      ),
+    );
+    if ((leave ?? false) && mounted) Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(lessonProvider);
@@ -76,91 +117,100 @@ class _LessonScreenState extends ConsumerState<LessonScreen> with SingleTickerPr
     final lesson = widget.lesson;
     final ready = identical(state.lesson, lesson);
     final steps = lesson.steps.length;
-    final body = Scaffold(
-      backgroundColor: Colors.transparent,
-      body: AmbientBackground(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, Space.md),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    GlassIconButton(
-                      icon: Icons.close_rounded,
-                      semantics: 'Close lesson',
-                      onTap: () => Navigator.of(context).pop(),
-                    ),
-                    const SizedBox(width: Space.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            lesson.title,
-                            style: t.heading,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            ready && state.phase != LessonPhase.intro && steps > 1
-                                ? 'Part ${state.step + 1} of $steps · ${_stepName(lesson.steps[state.step])}'
-                                : lesson.skill.label,
-                            style: t.caption.copyWith(color: c.textTertiary),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+    final body = PopScope(
+      // The system Back gesture asks first too, while a game is running.
+      canPop: state.phase != LessonPhase.playing,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_close(leaving: true));
+      },
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: AmbientBackground(
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, Space.md),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      GlassIconButton(
+                        icon: Icons.close_rounded,
+                        semantics: 'Close lesson',
+                        onTap: () => unawaited(_close(leaving: state.phase == LessonPhase.playing)),
                       ),
+                      const SizedBox(width: Space.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              lesson.title,
+                              style: t.heading,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              ready && state.phase != LessonPhase.intro && steps > 1
+                                  ? 'Part ${state.step + 1} of $steps · ${_stepName(lesson.steps[state.step])}'
+                                  : lesson.skill.label,
+                              style: t.caption.copyWith(color: c.textTertiary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: Space.sm),
+                      const TunerButton(),
+                    ],
+                  ),
+                  if (ready && steps > 1 && state.phase != LessonPhase.intro) ...[
+                    const SizedBox(height: Space.md),
+                    MeterBar(
+                      value:
+                          (state.outcomes.length + (state.phase == LessonPhase.playing ? 0.5 : 0)) /
+                          steps,
+                      height: 4,
                     ),
                   ],
-                ),
-                if (ready && steps > 1 && state.phase != LessonPhase.intro) ...[
-                  const SizedBox(height: Space.md),
-                  MeterBar(
-                    value:
-                        (state.outcomes.length + (state.phase == LessonPhase.playing ? 0.5 : 0)) /
-                        steps,
-                    height: 4,
+                  Expanded(
+                    child: !ready
+                        ? const SizedBox.shrink()
+                        : switch (state.phase) {
+                            LessonPhase.intro => _Intro(lesson: lesson),
+                            _
+                                when lesson.steps[state.step].listens &&
+                                    state.phase == LessonPhase.playing &&
+                                    state.status == MicStatus.needsPermission =>
+                              MicBlocked(
+                                title: 'Microphone needed',
+                                body: 'Lessons listen to check what you play. Nothing is recorded.',
+                                action: 'Allow microphone',
+                                onAction: controller.requestPermission,
+                              ),
+                            _
+                                when lesson.steps[state.step].listens &&
+                                    state.phase == LessonPhase.playing &&
+                                    state.status == MicStatus.permanentlyDenied =>
+                              MicBlocked(
+                                title: 'Microphone is off',
+                                body: 'Turn on microphone access for Fretlight in Settings to take this lesson.',
+                                action: 'Open Settings',
+                                onAction: controller.openSettings,
+                              ),
+                            LessonPhase.playing => GameView(state: state),
+                            LessonPhase.stepDone => _StepResult(state: state),
+                            LessonPhase.finished => _Finished(state: state),
+                          },
                   ),
+                  if (ready &&
+                      state.phase == LessonPhase.playing &&
+                      lesson.steps[state.step].listens) ...[
+                    const MicLevelMeter(),
+                    const SizedBox(height: Space.xs),
+                  ],
                 ],
-                Expanded(
-                  child: !ready
-                      ? const SizedBox.shrink()
-                      : switch (state.phase) {
-                          LessonPhase.intro => _Intro(lesson: lesson),
-                          _
-                              when lesson.steps[state.step].listens &&
-                                  state.phase == LessonPhase.playing &&
-                                  state.status == MicStatus.needsPermission =>
-                            MicBlocked(
-                              title: 'Microphone needed',
-                              body: 'Lessons listen to check what you play. Nothing is recorded.',
-                              action: 'Allow microphone',
-                              onAction: controller.requestPermission,
-                            ),
-                          _
-                              when lesson.steps[state.step].listens &&
-                                  state.phase == LessonPhase.playing &&
-                                  state.status == MicStatus.permanentlyDenied =>
-                            MicBlocked(
-                              title: 'Microphone is off',
-                              body: 'Turn on microphone access for Fretlight in Settings to take this lesson.',
-                              action: 'Open Settings',
-                              onAction: controller.openSettings,
-                            ),
-                          LessonPhase.playing => GameView(state: state),
-                          LessonPhase.stepDone => _StepResult(state: state),
-                          LessonPhase.finished => _Finished(state: state),
-                        },
-                ),
-                if (ready &&
-                    state.phase == LessonPhase.playing &&
-                    lesson.steps[state.step].listens) ...[
-                  const MicLevelMeter(),
-                  const SizedBox(height: Space.xs),
-                ],
-              ],
+              ),
             ),
           ),
         ),
@@ -179,7 +229,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen> with SingleTickerPr
 }
 
 String _stepName(Exercise e) => switch (e) {
-  ChordSteps() => 'Play the chords',
+  ChordSteps(:final chords) => chords.toSet().length > 1 ? 'Change chords' : 'Play a chord',
   ChangeRace(:final seconds) => '$seconds-second changes',
   SongSteps() => 'Play the song',
   NoteSteps(:final tuneCents) when tuneCents != null => 'Tune each string',
@@ -440,7 +490,7 @@ class _Finished extends ConsumerWidget {
               child: _OutcomeCard(outcome: o, title: _stepName(lesson.steps[i])),
             ),
           const SizedBox(height: Space.lg),
-          if (lesson.id != 'workout' && next.id != lesson.id && award.stars > 0)
+          if (lesson.id != 'workout' && !lesson.isDrill && next.id != lesson.id && award.stars > 0)
             StageButton(
               label: 'Next: ${next.title}',
               icon: Icons.arrow_forward_rounded,
@@ -456,7 +506,7 @@ class _Finished extends ConsumerWidget {
           ),
           const SizedBox(height: Space.md),
           StageButton.glass(
-            label: 'Back to lessons',
+            label: lesson.isDrill || lesson.id == 'workout' ? 'Done' : 'Back to lessons',
             expand: true,
             onPressed: () => Navigator.of(context).pop(),
           ),

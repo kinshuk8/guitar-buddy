@@ -46,8 +46,11 @@ final class ProgressController extends Notifier<Progress> {
   );
 
   /// Adds practice time (and XP) to today.
+  ///
+  /// Can arrive a moment after a lesson closes (see LessonController.leave);
+  /// if the app is shutting down by then, there's nothing to save into.
   void addPractice({Duration time = Duration.zero, int xp = 0}) {
-    if (time <= Duration.zero && xp == 0) return;
+    if (!ref.mounted || (time <= Duration.zero && xp == 0)) return;
     final key = dayKey(ref.read(nowProvider)());
     final day = _store.days[key] ?? const StoredDay(seconds: 0, xp: 0);
     _store.putDay(key, StoredDay(seconds: day.seconds + time.inSeconds, xp: day.xp + xp));
@@ -66,15 +69,18 @@ final class ProgressController extends Notifier<Progress> {
     final previousStars = previous?.stars ?? 0;
     final xp = xpFor(base: lesson.xp, stars: stars, previousStars: previousStars);
 
-    _store.putLesson(
-      lesson.id,
-      StoredLesson(
-        stars: math.max(stars, previousStars),
-        bestScore: math.max(score, previous?.bestScore ?? 0),
-        attempts: (previous?.attempts ?? 0) + 1,
-        lastPlayed: now,
-      ),
-    );
+    // Drills build mastery and time, not stars: no lesson record.
+    if (!lesson.isDrill) {
+      _store.putLesson(
+        lesson.id,
+        StoredLesson(
+          stars: math.max(stars, previousStars),
+          bestScore: math.max(score, previous?.bestScore ?? 0),
+          attempts: (previous?.attempts ?? 0) + 1,
+          lastPlayed: now,
+        ),
+      );
+    }
 
     // Chord mastery, from every strum judged.
     final perChord = <String, ({int clean, int missed})>{};
@@ -108,6 +114,19 @@ final class ProgressController extends Notifier<Progress> {
 
     state = _load();
     return Award(xp: xp, stars: stars, previousStars: previousStars, newBests: bests);
+  }
+
+  /// Records a free practice run (a progression, a song, a chord from the
+  /// library): chord mastery from every chord played, and XP for the
+  /// chords played cleanly. Its time is added separately, as it's played.
+  void recordFree(Map<String, ({int clean, int missed})> chords) {
+    if (!ref.mounted || chords.isEmpty) return;
+    for (final MapEntry(:key, :value) in chords.entries) {
+      final k = 'chord:$key';
+      _store.putSkill(k, updatedMastery(_store.skills[k] ?? 0, value));
+    }
+    final clean = chords.values.fold(0, (s, v) => s + v.clean);
+    addPractice(xp: math.min(30, 5 + clean));
   }
 
   /// Opens a later stage without finishing the ones before.

@@ -11,7 +11,9 @@ import 'package:fretlight/core/audio/listening.dart';
 import 'package:fretlight/core/music/music.dart';
 import 'package:fretlight/core/widgets/mic_level.dart';
 import 'package:fretlight/features/identify/domain/chord_smoother.dart';
+import 'package:fretlight/features/learn/application/progress_controller.dart';
 import 'package:fretlight/features/practice/domain/practice_session.dart';
+import 'package:fretlight/features/settings/application/chord_matching.dart';
 import 'package:fretlight/features/settings/application/sensitivity.dart';
 
 /// What to practise, as handed to the practice screen.
@@ -82,6 +84,15 @@ final class PracticeController extends Notifier<PracticeState> {
   StreamSubscription<Uint8List>? _pcm;
   ChordSmoother? _smoother;
 
+  /// When the current stretch of listening began: practice time counts
+  /// while the screen is open and listening, not while it sits behind
+  /// another screen.
+  DateTime? _since;
+  bool _active = false;
+
+  /// The finished run has been added to progress (once per run).
+  bool _recorded = false;
+
   /// While the app itself strums a reference chord, the mic would hear it
   /// and count it: readings are ignored until then.
   DateTime _deafUntil = DateTime.fromMillisecondsSinceEpoch(0);
@@ -103,16 +114,68 @@ final class PracticeController extends Notifier<PracticeState> {
   }
 
   void begin(PracticePlan plan) {
+    _addTime();
+    _since = _active ? DateTime.now() : null;
+    _recorded = false;
     _smoother?.reset();
     state = PracticeState(
       plan: plan,
-      session: PracticeSession(plan.sounding),
+      session: PracticeSession(plan.sounding, matching: ref.read(chordMatchingProvider)),
       status: state.status,
       version: state.version + 1,
     );
   }
 
-  Future<void> setActive({required bool active}) => _mic.setActive(active: active);
+  Future<void> setActive({required bool active}) {
+    _active = active;
+    if (active) {
+      _since ??= state.session?.done ?? true ? null : DateTime.now();
+    } else {
+      _addTime();
+    }
+    return _mic.setActive(active: active);
+  }
+
+  /// The practice screen closed: count the time so far.
+  void leave() {
+    _active = false;
+    _addTime();
+  }
+
+  /// Adds the listening time since [_since] to today's practice.
+  void _addTime() {
+    final since = _since;
+    _since = null;
+    if (since == null) return;
+    // Long idle stretches (the phone left on the stand) don't count past
+    // a reasonable session.
+    var time = DateTime.now().difference(since);
+    if (time > const Duration(minutes: 30)) time = const Duration(minutes: 30);
+    final progress = ref.read(progressProvider.notifier);
+    // Can be called while widgets are being torn down: save a moment later.
+    scheduleMicrotask(() => progress.addPractice(time: time));
+  }
+
+  /// When a run is finished: its time, and each chord's clean and missed
+  /// strums for mastery.
+  void _finishIfDone() {
+    final session = state.session;
+    final plan = state.plan;
+    if (session == null || plan == null || !session.done || _recorded) return;
+    _recorded = true;
+    _addTime();
+    final chords = <String, ({int clean, int missed})>{};
+    for (final r in session.results) {
+      final symbol = plan.shapeOf(r.target).symbol();
+      final prev = chords[symbol] ?? (clean: 0, missed: 0);
+      chords[symbol] = (
+        clean: prev.clean + (r.clean ? 1 : 0),
+        missed: prev.missed + r.misses + (r.skipped ? 1 : 0),
+      );
+    }
+    final progress = ref.read(progressProvider.notifier);
+    scheduleMicrotask(() => progress.recordFree(chords));
+  }
 
   Future<void> requestPermission() => _mic.requestPermission();
 
@@ -121,6 +184,7 @@ final class PracticeController extends Notifier<PracticeState> {
   void skip() {
     state.session?.skip();
     state = state.copyWith(heard: () => null, verdict: () => null);
+    _finishIfDone();
   }
 
   void restart() {
@@ -136,6 +200,12 @@ final class PracticeController extends Notifier<PracticeState> {
       sampleRate: description.sampleRate,
       chords: true,
     );
+    // The screen can close while the worker spawns: nothing left to feed.
+    if (!ref.mounted) {
+      worker.dispose();
+      _worker = null;
+      return;
+    }
     worker.reset();
     final detector = ChromaChordDetector(sampleRate: description.sampleRate);
     final hop = detector.windowSize / 4 / description.sampleRate;
@@ -151,6 +221,7 @@ final class PracticeController extends Notifier<PracticeState> {
       final verdict = session.hear(reading);
       if (verdict != null) {
         state = state.copyWith(heard: () => reading, verdict: () => verdict);
+        _finishIfDone();
       }
     });
     _pcm = pcm.listen(worker.push);

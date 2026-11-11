@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fretlight/app/router.dart';
+import 'package:fretlight/app/shell.dart';
 import 'package:fretlight/core/design/theme.dart';
 import 'package:fretlight/core/painting/fretboard.dart';
 import 'package:fretlight/features/gallery/presentation/gallery_screen.dart';
@@ -21,14 +22,19 @@ Widget _host({required ThemeData theme, bool reducedMotion = false}) => TestDevi
 );
 
 void main() {
-  testWidgets('app boots into Learn, in a shell with six tabs', (tester) async {
+  testWidgets('app boots into Home, in a shell with four labelled tabs', (tester) async {
     await tester.pumpWidget(TestDevices().app());
     await tester.pumpAndSettle();
-    // Every tab is labelled for screen readers; only the active one shows text.
-    for (final label in ['Learn', 'Tune', 'Identify', 'Chords', 'Tempo', 'Songs']) {
-      expect(find.bySemanticsLabel(label), findsOneWidget, reason: label);
+    // Every tab shows its name on screen, not only to screen readers.
+    for (final label in ['Home', 'Practice', 'Songs', 'Tools']) {
+      expect(
+        find.descendant(of: find.byType(StageNavBar), matching: find.bySemanticsLabel(label)),
+        findsOneWidget,
+        reason: label,
+      );
+      expect(find.text(label), findsWidgets, reason: label);
     }
-    expect(find.text('Learn'), findsWidgets);
+    expect(find.text('Continue where you left off'.toUpperCase()), findsOneWidget);
     // The gallery is a debug-only route (linked from the bottom of Songs).
     final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
     unawaited(container.read(routerProvider).push('/gallery'));

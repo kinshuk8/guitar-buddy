@@ -1,7 +1,71 @@
+import 'dart:math' as math;
+
 import 'package:fretlight/core/audio/dsp/chord_detector.dart' show ChordScore;
 import 'package:fretlight/core/music/music.dart';
 import 'package:fretlight/features/identify/domain/chord_smoother.dart';
 import 'package:meta/meta.dart';
+
+/// How closely a strum must match the chord asked for. Guitars, strings
+/// and microphones colour a chord differently: a quiet G string makes Em
+/// sound like E5, a barre with one dead string loses a note.
+enum ChordMatching {
+  /// Only the chord itself counts.
+  exact(
+    'Exact',
+    'Only the exact chord counts. For checking your shapes are clean.',
+    margin: 0.01,
+    wrongConfidence: 0.5,
+    maxClash: 0.15,
+  ),
+
+  /// The chord, or the same chord give or take a note (E5 for Em, G for G7).
+  normal(
+    'Normal',
+    'The chord, or the same chord with a note missing or added (E5 for Em).',
+    margin: 0.03,
+    wrongConfidence: 0.6,
+    maxClash: 0.15,
+  ),
+
+  /// Also any same-root reading that doesn't contradict major or minor
+  /// (sus, power, add), from further down the identifier's list; and a
+  /// strum is only called wrong when the identifier is sure.
+  forgiving(
+    'Forgiving',
+    'For guitars that sound unusual, old strings, or barre chords that don’t ring fully.',
+    margin: 0.08,
+    wrongConfidence: 0.8,
+    maxClash: 0.2,
+  );
+
+  ChordMatching(
+    this.label,
+    this.detail, {
+    required this.margin,
+    required this.wrongConfidence,
+    required this.maxClash,
+  });
+
+  final String label;
+  final String detail;
+
+  /// How far below the top candidate the target may score and still count.
+  final double margin;
+
+  /// How sure the identifier must be before a different chord counts
+  /// against you (otherwise it keeps listening).
+  final double wrongConfidence;
+
+  /// A near miss only counts if the notes heard back it up: the opposite
+  /// third (minor for a major chord) no louder than this, relative to the
+  /// loudest note, than the chord's own third...
+  final double maxClash;
+
+  /// ...and no more than this share of the sound on notes outside the
+  /// chord. Measured on many guitars and mics: the right chord stays under
+  /// 0.45; a different chord starts around 0.48.
+  static const maxOutside = 0.47;
+}
 
 /// How a strum compared with the chord asked for.
 enum Verdict {
@@ -51,9 +115,11 @@ final class StepResult {
 /// can't tick off two bars of the same chord, and a wrong chord isn't
 /// counted again on every frame while it rings.
 final class PracticeSession {
-  PracticeSession(this.targets) : assert(targets.isNotEmpty, 'nothing to practise');
+  PracticeSession(this.targets, {this.matching = ChordMatching.normal})
+    : assert(targets.isNotEmpty, 'nothing to practise');
 
   final List<Chord> targets;
+  final ChordMatching matching;
   final List<StepResult> _results = [];
   int _index = 0;
   int _missesHere = 0;
@@ -74,19 +140,32 @@ final class PracticeSession {
     if (reading.strum <= _lastJudgedStrum) return null;
     final heard = reading.chord ?? reading.candidates.firstOrNull?.chord;
     if (heard == null) return null;
-    var verdict = judge(target, heard);
-    if (verdict == Verdict.miss && closeEnough(target, reading.candidates)) {
+    var verdict = judge(target, heard, matching: matching);
+    if (verdict == Verdict.miss &&
+        closeEnough(target, reading.candidates, margin: matching.margin, matching: matching)) {
       // Not the identifier's top answer, but within a hair of it: with the
       // target known, that's the chord you played (real guitars and phone
       // mics blur the top few candidates together).
       verdict = Verdict.hit;
+    }
+    // Anything short of the identifier naming the chord outright must agree
+    // with the notes heard. Without this, Dm passes for D: its notes look
+    // like "D5", and D5 is D missing a note.
+    final named =
+        reading.chord != null &&
+        judge(target, reading.chord!, matching: ChordMatching.exact) == Verdict.hit;
+    if (verdict != Verdict.miss && !named) {
+      final e = evidence(target, reading.chroma);
+      if (e.thirdClash > matching.maxClash || e.outside > ChordMatching.maxOutside) {
+        verdict = Verdict.miss;
+      }
     }
     // A strum the identifier couldn't name at all, and nowhere near the
     // target, isn't judged: better to keep listening than to scold noise.
     if (reading.chord == null && verdict == Verdict.miss) return null;
     // A wrong chord needs real confidence before it counts against you;
     // a right one only needs to be the identifier's answer.
-    if (verdict == Verdict.miss && reading.confidence < 0.6) return null;
+    if (verdict == Verdict.miss && reading.confidence < matching.wrongConfidence) return null;
     _lastJudgedStrum = reading.strum;
     _last = Attempt(target: target, heard: heard, verdict: verdict);
     if (verdict == Verdict.miss) {
@@ -114,15 +193,44 @@ final class PracticeSession {
 
   /// Whether [target] (or the same chord give or take a note) scores within
   /// [margin] of the best candidate.
-  static bool closeEnough(Chord target, List<ChordScore> candidates, {double margin = 0.03}) {
+  static bool closeEnough(
+    Chord target,
+    List<ChordScore> candidates, {
+    double margin = 0.03,
+    ChordMatching matching = ChordMatching.normal,
+  }) {
     if (candidates.isEmpty) return false;
     final best = candidates.first.score;
     return candidates.any(
-      (c) => c.score >= best - margin && judge(target, c.chord) != Verdict.miss,
+      (c) => c.score >= best - margin && judge(target, c.chord, matching: matching) != Verdict.miss,
     );
   }
 
-  static Verdict judge(Chord target, Chord heard) {
+  /// What the notes heard say about [target]: the share of energy on notes
+  /// outside it, and how much louder the opposite third is than its own
+  /// (relative to the loudest note; negative when its own third is louder).
+  /// Both 0 when there's nothing to go on.
+  static ({double outside, double thirdClash}) evidence(Chord target, List<double> chroma) {
+    if (chroma.length != 12) return (outside: 0, thirdClash: 0);
+    final total = chroma.fold<double>(0, (a, b) => a + b);
+    final loudest = chroma.reduce(math.max);
+    if (total <= 0 || loudest <= 0) return (outside: 0, thirdClash: 0);
+    final tones = {for (final pc in target.pitchClasses) pc.value};
+    var inside = 0.0;
+    for (final t in tones) {
+      inside += chroma[t];
+    }
+    final own = target.quality.required.where((i) => i == 3 || i == 4).firstOrNull;
+    var clash = 0.0;
+    if (own != null) {
+      final ownPc = target.root.transpose(own).value;
+      final otherPc = target.root.transpose(own == 4 ? 3 : 4).value;
+      clash = (chroma[otherPc] - chroma[ownPc]) / loudest;
+    }
+    return (outside: 1 - inside / total, thirdClash: clash);
+  }
+
+  static Verdict judge(Chord target, Chord heard, {ChordMatching matching = ChordMatching.normal}) {
     if (heard == target) return Verdict.hit;
     // Ignore a slash bass the identifier may or may not hear.
     final t = Chord(target.root, target.quality);
@@ -137,7 +245,11 @@ final class PracticeSession {
     final tThird = t.quality.required.intersection(third);
     final hThird = h.quality.required.intersection(third);
     if (tThird.isNotEmpty && hThird.isNotEmpty && tThird.first != hThird.first) return Verdict.miss;
+    if (matching == ChordMatching.exact) return Verdict.miss;
     if (pt.containsAll(ph) || ph.containsAll(pt)) return Verdict.close;
+    // Same root, no clash between major and minor: the shape was right and
+    // the guitar or a dead string coloured it (A heard as Asus4 or Aadd9).
+    if (matching == ChordMatching.forgiving) return Verdict.close;
     return Verdict.miss;
   }
 

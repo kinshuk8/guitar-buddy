@@ -19,7 +19,7 @@ Future<TestDevices> openChords(WidgetTester tester, {LocalStore? store}) async {
   final devices = TestDevices(store: store, library: library);
   await tester.pumpWidget(devices.app());
   await tester.pump();
-  await tester.tap(find.bySemanticsLabel('Chords'));
+  goTo(tester, '/tools/chords');
   await tester.pumpAndSettle();
   return devices;
 }

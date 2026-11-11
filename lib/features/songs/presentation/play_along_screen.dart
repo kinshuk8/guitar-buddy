@@ -18,6 +18,7 @@ import 'package:fretlight/core/storage/local_store.dart';
 import 'package:fretlight/core/widgets/glass.dart';
 import 'package:fretlight/core/widgets/glass_controls.dart';
 import 'package:fretlight/core/widgets/music_text.dart';
+import 'package:fretlight/core/widgets/screen_header.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
 import 'package:fretlight/features/chords/application/chord_library_provider.dart';
 import 'package:fretlight/features/chords/application/chord_player.dart';
@@ -29,6 +30,7 @@ import 'package:fretlight/features/songs/domain/backing.dart';
 import 'package:fretlight/features/songs/domain/chordpro.dart';
 import 'package:fretlight/features/songs/domain/song_timeline.dart';
 import 'package:fretlight/features/songs/presentation/songs_screen.dart';
+import 'package:fretlight/features/tuner/presentation/tuner_button.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
@@ -46,7 +48,11 @@ class PlayAlongScreen extends ConsumerWidget {
       child: switch ((songs, entry)) {
         (null, _) => const Center(child: CircularProgressIndicator.adaptive(strokeWidth: 2)),
         (_, null) => Center(
-          child: Text('This song is no longer here.', style: context.stageText.bodySecondary),
+          child: EmptyState(
+            message: 'This song is no longer here.',
+            action: 'Back to songs',
+            onAction: () => context.go('/songs'),
+          ),
         ),
         (_, final SongEntry e) => _Player(key: ValueKey(e.source), entry: e),
       },
@@ -94,6 +100,10 @@ class _PlayerState extends ConsumerState<_Player> with SingleTickerProviderState
   void initState() {
     super.initState();
     _out = ref.read(audioOutputProvider);
+    // After the frame: providers can't change while the tree is building.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(recentSongsProvider.notifier).opened(widget.entry.id);
+    });
   }
 
   /// Voices playing now: the first pass, and (when looping) the loop.
@@ -439,18 +449,42 @@ class _PlayerState extends ConsumerState<_Player> with SingleTickerProviderState
                     ),
                   ),
                   const SizedBox(width: Space.sm),
-                  GlassIconButton(
-                    icon: Icons.hearing_rounded,
-                    semantics: 'Practise this song: it waits for each chord',
-                    onTap: _practise,
-                  ),
-                  const SizedBox(width: Space.sm),
-                  GlassIconButton(
-                    icon: Icons.tune_rounded,
-                    semantics: 'Key, capo and tempo',
-                    onTap: () => _showArrangeSheet(context),
-                  ),
+                  const TunerButton(),
                 ],
+              ),
+            ),
+            // What you can do with this song, in words.
+            Align(
+              alignment: Alignment.centerLeft,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+                child: Row(
+                  children: [
+                    GlassPill(
+                      label: 'Practise',
+                      icon: Icons.hearing_rounded,
+                      semantics: 'Practise this song: it waits for each chord',
+                      onTap: _practise,
+                    ),
+                    const SizedBox(width: Space.sm),
+                    GlassPill(
+                      label: 'Key and capo',
+                      icon: Icons.tune_rounded,
+                      semantics: 'Key, capo and tempo',
+                      onTap: () => _showArrangeSheet(context),
+                    ),
+                    if (!widget.entry.bundled) ...[
+                      const SizedBox(width: Space.sm),
+                      GlassPill(
+                        label: 'Edit',
+                        icon: Icons.edit_rounded,
+                        semantics: 'Edit this song',
+                        onTap: () => unawaited(showSongEditor(context, editing: widget.entry)),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
             Expanded(
@@ -546,7 +580,7 @@ class _PlayerState extends ConsumerState<_Player> with SingleTickerProviderState
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Semantics(header: true, child: Text('Arrange', style: t.title)),
+              Semantics(header: true, child: Text('Key, capo and tempo', style: t.title)),
               const SizedBox(height: Space.md),
               _Stepper(
                 label: 'Transpose',

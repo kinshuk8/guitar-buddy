@@ -25,7 +25,7 @@ Future<FakeAudioInputSource> pumpApp(
   await tester.pumpWidget(devices.app());
   await tester.pump();
   // The app opens on Learn; the tuner is the next tab.
-  await tester.tap(find.bySemanticsLabel('Tune'));
+  goTo(tester, '/tuner');
   await tester.pump();
   // Let the controller's async start (permission → start → isolate spawn) finish.
   await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
@@ -75,7 +75,7 @@ void main() {
   testWidgets('switching tabs releases the microphone; coming back reopens it', (tester) async {
     final mic = await pumpApp(tester);
     expect(mic.isCapturing, isTrue);
-    await tester.tap(find.bySemanticsLabel('Tempo'));
+    goTo(tester, '/tools/metronome');
     await tester.pumpAndSettle();
     // The shared mic releases through a serialised queue: let it run.
     for (var i = 0; i < 3; i++) {
@@ -83,7 +83,7 @@ void main() {
       await tester.pump();
     }
     expect(mic.isCapturing, isFalse);
-    await tester.tap(find.bySemanticsLabel('Tune'));
+    goTo(tester, '/tuner');
     await tester.pumpAndSettle();
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
     expect(mic.isCapturing, isTrue);

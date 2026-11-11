@@ -33,6 +33,7 @@ class GlassPill extends StatelessWidget {
     final c = context.stage;
     final on = selected ?? false;
     return Semantics(
+      container: true,
       button: true,
       selected: selected,
       label: semantics,
@@ -101,6 +102,7 @@ class GlassIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.stage;
     return Semantics(
+      container: true,
       button: true,
       label: semantics,
       excludeSemantics: true,

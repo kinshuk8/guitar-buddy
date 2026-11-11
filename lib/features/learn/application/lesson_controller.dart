@@ -23,6 +23,7 @@ import 'package:fretlight/features/learn/domain/curriculum.dart';
 import 'package:fretlight/features/learn/domain/games.dart';
 import 'package:fretlight/features/learn/domain/progress.dart';
 import 'package:fretlight/features/practice/domain/practice_session.dart';
+import 'package:fretlight/features/settings/application/chord_matching.dart';
 import 'package:fretlight/features/settings/application/sensitivity.dart';
 import 'package:fretlight/features/songs/application/songs_controller.dart';
 import 'package:fretlight/features/songs/domain/song_timeline.dart';
@@ -203,9 +204,9 @@ final class LessonController extends Notifier<LessonState> {
     final Object game;
     switch (exercise) {
       case ChordSteps(:final sequence):
-        game = ChordGame.steps(sequence);
+        game = ChordGame.steps(sequence, matching: ref.read(chordMatchingProvider));
       case ChangeRace():
-        game = ChordGame.race(exercise);
+        game = ChordGame.race(exercise, matching: ref.read(chordMatchingProvider));
       case SongSteps(:final songId, :final maxChords):
         final songs = await ref.read(songsProvider.future);
         final song = songs.firstWhere((s) => s.id == songId).song;
@@ -213,7 +214,9 @@ final class LessonController extends Notifier<LessonState> {
             .where((e) => e.chord != null)
             .take(maxChords ?? 1 << 30)
             .toList();
-        game = ChordGame.song([for (final e in events) e.chord!]);
+        game = ChordGame.song([
+          for (final e in events) e.chord!,
+        ], matching: ref.read(chordMatchingProvider));
         lines = [for (final e in events) song.sections[e.section].lines[e.line].lyrics];
       case NoteSteps():
         game = NoteGame(exercise);
@@ -370,10 +373,15 @@ final class LessonController extends Notifier<LessonState> {
   }
 
   /// Leaving mid-lesson still counts the practice time.
+  ///
+  /// Called from the lesson screen's dispose, while the widget tree is
+  /// unmounting: the save waits a microtask, when providers may change.
   void leave() {
     final started = _startedAt;
     if (started != null && state.phase != LessonPhase.finished) {
-      ref.read(progressProvider.notifier).addPractice(time: _now() - started);
+      final time = _now() - started;
+      final progress = ref.read(progressProvider.notifier);
+      scheduleMicrotask(() => progress.addPractice(time: time));
     }
     _startedAt = null;
   }
@@ -381,6 +389,12 @@ final class LessonController extends Notifier<LessonState> {
   Future<void> _onStart(InputDescription description, Stream<Uint8List> pcm) async {
     final rate = _sampleRate = description.sampleRate;
     final worker = _worker ??= await DspWorker.spawn(sampleRate: rate, chords: true);
+    // The screen can close while the worker spawns: nothing left to feed.
+    if (!ref.mounted) {
+      worker.dispose();
+      _worker = null;
+      return;
+    }
     worker.reset();
     final sensitivity = ref.read(sensitivityProvider);
     final level = ref.read(micLevelProvider.notifier);

@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/kinshuk8/guitar-buddy/releases"><img src="https://img.shields.io/badge/release-v0.9.1%20pre--release-2f6f62" alt="Release: v0.9.1 pre-release"></a>
+  <a href="https://github.com/kinshuk8/guitar-buddy/releases"><img src="https://img.shields.io/badge/release-v0.10.0%20pre--release-2f6f62" alt="Release: v0.10.0 pre-release"></a>
   <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS-3b4a6b" alt="Platforms: Android and iOS">
   <img src="https://img.shields.io/badge/Flutter-3.47-02569B?logo=flutter&logoColor=white" alt="Built with Flutter 3.47">
   <img src="https://img.shields.io/badge/network-none%20at%20runtime-555" alt="No network access at runtime">
@@ -31,12 +31,17 @@ analytics and no network access. The microphone is only open while a
 listening screen is visible, and audio is never recorded or stored.
 
 <p align="center">
-  <img src="docs/screenshots/learn.jpg" width="300" alt="Learn tab: level 4 with 320 XP, a 2-day streak, 7 of 10 minutes practised today, a Daily chord workout button, the next lesson and skill bars">
+  <img src="docs/screenshots/home.jpg" width="300" alt="Home: the next lesson, today's practice goal with a Daily chord workout button, quick buttons for Metronome, Identify and Settings, recent songs, a Tuner button at the top, and four labelled tabs: Home, Practice, Songs and Tools">
 </p>
 
 ## Screens
 
 <table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/practice.jpg" width="200" alt="Practice tab: the next lesson, a row of chords to drill with mastery rings, and labelled rows for Lessons, Daily chord workout, Chords and Changes"><br><sub>Practice</sub></td>
+    <td align="center"><img src="docs/screenshots/changes.jpg" width="200" alt="Changes: pick a first and second chord, then Switch between them or a One-minute race, with your best races listed"><br><sub>Chord changes</sub></td>
+    <td align="center"><img src="docs/screenshots/welcome.jpg" width="200" alt="Welcome screen asking how much guitar you have played, with three choices and a Skip button"><br><sub>First launch</sub></td>
+  </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/learn-progress.jpg" width="200" alt="Chord mastery rings for Em, Am, Dm, A, E, D, G and C, best changes a minute, and the Beginner lessons with their stars"><br><sub>Progress and chord mastery</sub></td>
     <td align="center"><img src="docs/screenshots/change-race.jpg" width="200" alt="One-minute change race: a 60-second clock, a change counter, and the E minor chord to play"><br><sub>One-minute changes</sub></td>
@@ -59,11 +64,19 @@ listening screen is visible, and audio is never recorded or stored.
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/arrange-song.jpg" width="200" alt="Arrange sheet with transpose, capo and tempo controls, a guitar-part strum pattern and a click toggle"><br><sub>Arrange a song</sub></td>
-    <td align="center"><img src="docs/screenshots/settings.jpg" width="200" alt="Settings with appearance, left-handed mode, listening sensitivity and a plain-language privacy statement"><br><sub>Settings</sub></td>
+    <td align="center"><img src="docs/screenshots/tools.jpg" width="200" alt="Tools: Tuner, Metronome, Identify, Chord library and Settings, each with a one-line description"><br><sub>Tools</sub></td>
+    <td align="center"><img src="docs/screenshots/settings.jpg" width="200" alt="Settings with appearance, left-handed mode, listening sensitivity and chord matching (Exact, Normal, Forgiving)"><br><sub>Settings</sub></td>
   </tr>
 </table>
 
 ## Features
+
+**Easy to find your way.** Four labelled tabs: Home, Practice, Songs and
+Tools. The tuner is one tap from every screen, every feature is at most two
+taps from opening the app, and options most players never need sit under
+Advanced. A two-question welcome (how much you've played, which hand you
+strum with) sets the app up for you, and new players go straight into a
+five-minute first session.
 
 **A path from first chord to mastery.** 55 short lessons in four stages:
 Beginner, Improver, Adept and Mastery. You start with string names,
@@ -97,8 +110,11 @@ shape plays back as a strum, and you can tap a single string to hear it.
 Draw your own shapes on a fretboard grid: the app names them from their
 notes.
 
-**Practise chord changes.** Drill one chord, or switch between two, and
-the app moves on only when it hears the chord.
+**Practise chords and changes.** Tap any chord to drill it, five clean
+strums at a time, with a ring showing how well you know it. Pick any two
+chords to switch between them, or race the clock for a minute and beat your
+best. Free practice counts toward your daily goal, streak and chord
+mastery, just like lessons.
 
 **Play along with songs.** Twelve public-domain starter songs, plus any
 song you paste or import in [ChordPro](https://www.chordpro.org) format.
@@ -119,7 +135,11 @@ subdivisions, per-beat accents and tap tempo.
 **Works in real rooms.** Listening screens learn the room's background
 level, so a fan or a quiet TV doesn't register as playing. A level meter
 shows when the app hears you, and a sensitivity setting adjusts for
-louder or quieter spaces.
+louder or quieter spaces. Chord matching (Exact, Normal or Forgiving)
+sets how closely a strum must match: Forgiving suits guitars that sound
+unusual, old strings, or barre chords that don't ring fully. Whatever the
+setting, the app checks the notes it hears, so the wrong chord with its
+third clearly ringing (Dm for D) doesn't count.
 
 **Built for everyone.** Light and dark themes, a left-handed mode, and
 screen-reader labels throughout.

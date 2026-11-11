@@ -11,15 +11,17 @@ import 'package:fretlight/core/painting/chord_diagram.dart';
 import 'package:fretlight/core/widgets/glass.dart';
 import 'package:fretlight/core/widgets/glass_controls.dart';
 import 'package:fretlight/core/widgets/music_text.dart';
+import 'package:fretlight/core/widgets/screen_header.dart';
 import 'package:fretlight/features/chords/application/chord_library_provider.dart';
 import 'package:fretlight/features/chords/domain/chord_library.dart';
 import 'package:fretlight/features/chords/presentation/chord_editor.dart';
 import 'package:fretlight/features/settings/application/appearance.dart';
+import 'package:fretlight/features/tuner/presentation/tuner_button.dart';
 import 'package:go_router/go_router.dart';
 
 /// Opens a chord's detail page.
 void openChord(BuildContext context, ChordEntry entry) =>
-    unawaited(context.push('/chords/chord?s=${Uri.encodeQueryComponent(entry.symbol)}'));
+    unawaited(context.push('/tools/chords/chord?s=${Uri.encodeQueryComponent(entry.symbol)}'));
 
 /// Browse by root, search, favourites. One root at a time and only the
 /// everyday chords expanded, so the first view is eight cards, not eight
@@ -53,7 +55,6 @@ class _ChordsScreenState extends ConsumerState<ChordsScreen> {
   @override
   Widget build(BuildContext context) {
     final library = ref.watch(chordLibraryProvider);
-    final text = context.stageText;
     return SafeArea(
       bottom: false,
       child: CustomScrollView(
@@ -62,23 +63,35 @@ class _ChordsScreenState extends ConsumerState<ChordsScreen> {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
             sliver: SliverToBoxAdapter(
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Semantics(header: true, child: Text('Chords', style: text.display)),
+                  ScreenHeader(
+                    title: 'Chord library',
+                    onBack: () => context.pop(),
+                    actions: const [TunerButton()],
                   ),
-                  GlassIconButton(
-                    icon: Icons.add_rounded,
-                    semantics: 'Draw your own chord',
-                    onTap: () => showChordEditor(context),
-                  ),
-                  const SizedBox(width: Space.sm),
-                  GlassPill(
-                    label: '',
-                    icon: _favoritesOnly ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                    semantics: 'Favourites only',
-                    selected: _favoritesOnly,
-                    onTap: () => setState(() => _favoritesOnly = !_favoritesOnly),
+                  const SizedBox(height: Space.md),
+                  Wrap(
+                    spacing: Space.sm,
+                    runSpacing: Space.sm,
+                    children: [
+                      GlassPill(
+                        label: 'Favourites',
+                        icon: _favoritesOnly
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        semantics: 'Favourites only',
+                        selected: _favoritesOnly,
+                        onTap: () => setState(() => _favoritesOnly = !_favoritesOnly),
+                      ),
+                      GlassPill(
+                        label: 'Draw your own',
+                        icon: Icons.add_rounded,
+                        semantics: 'Draw your own chord',
+                        onTap: () => showChordEditor(context),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -107,6 +120,14 @@ class _ChordsScreenState extends ConsumerState<ChordsScreen> {
     );
   }
 
+  Widget _empty(String message, {required String action, required VoidCallback onAction}) =>
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, 0),
+        sliver: SliverToBoxAdapter(
+          child: EmptyState(message: message, action: action, onAction: onAction),
+        ),
+      );
+
   List<Widget> _content(ChordLibrary library) {
     final query = _search.text.trim();
     final favorites = ref.watch(favoritesProvider);
@@ -114,13 +135,19 @@ class _ChordsScreenState extends ConsumerState<ChordsScreen> {
       var results = library.search(query);
       if (_favoritesOnly) results = results.where((e) => favorites.contains(e.symbol)).toList();
       return results.isEmpty
-          ? [_message(context, 'No chord matches “$query”.')]
+          ? [_empty('No chord matches “$query”.', action: 'Clear search', onAction: _search.clear)]
           : [_grid(results, top: Space.xl)];
     }
     if (_favoritesOnly) {
       final entries = [for (final s in favorites) ?library.bySymbol(s)];
       return entries.isEmpty
-          ? [_message(context, 'Tap the heart on a chord to keep it here.')]
+          ? [
+              _empty(
+                'No favourites yet. Open a chord and tap Favourite to keep it here.',
+                action: 'Browse all chords',
+                onAction: () => setState(() => _favoritesOnly = false),
+              ),
+            ]
           : [_grid(entries, top: Space.xl)];
     }
     final root = PitchClass(ref.watch(browseRootProvider));

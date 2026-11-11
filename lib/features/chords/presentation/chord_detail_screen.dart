@@ -21,6 +21,7 @@ import 'package:fretlight/features/chords/presentation/chords_screen.dart';
 import 'package:fretlight/features/practice/application/practice_controller.dart';
 import 'package:fretlight/features/practice/presentation/practice_screen.dart';
 import 'package:fretlight/features/settings/application/appearance.dart';
+import 'package:fretlight/features/tuner/presentation/tuner_button.dart';
 import 'package:go_router/go_router.dart';
 
 class ChordDetailScreen extends ConsumerWidget {
@@ -55,6 +56,9 @@ class _Detail extends ConsumerStatefulWidget {
 class _DetailState extends ConsumerState<_Detail> {
   final _strings = FretboardController();
   int _index = 0;
+
+  /// Other shapes and the chord's notes: shown on request.
+  bool _advanced = false;
 
   ChordEntry get _entry => widget.entry;
   Voicing get _voicing => _entry.voicings[_index];
@@ -148,7 +152,7 @@ class _DetailState extends ConsumerState<_Detail> {
         // Big enough to read from a music stand, small enough that Play
         // stays on screen on an iPhone SE.
         final diagramWidth = math
-            .min(300, math.min(constraints.maxWidth * 0.74, (constraints.maxHeight - 380) * 0.78))
+            .min(300, math.min(constraints.maxWidth * 0.74, (constraints.maxHeight - 450) * 0.78))
             .clamp(170, 300)
             .toDouble();
         return SingleChildScrollView(
@@ -163,14 +167,7 @@ class _DetailState extends ConsumerState<_Detail> {
                     onTap: () => context.pop(),
                   ),
                   const Spacer(),
-                  GlassIconButton(
-                    icon: favorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                    semantics: favorite ? 'Remove from favourites' : 'Add to favourites',
-                    onTap: () {
-                      unawaited(HapticFeedback.selectionClick());
-                      ref.read(favoritesProvider.notifier).toggle(_entry.symbol);
-                    },
-                  ),
+                  const TunerButton(),
                 ],
               ),
               const SizedBox(height: Space.lg),
@@ -199,7 +196,9 @@ class _DetailState extends ConsumerState<_Detail> {
                 ),
               ),
               const SizedBox(height: Space.md),
-              _ShapeStepper(index: _index, count: count, onStep: _go),
+              // One shape is enough to start with; the others, and the
+              // notes inside the chord, are a tap away.
+              if (_advanced) _ShapeStepper(index: _index, count: count, onStep: _go),
               if (_entry.customIds[_index] case final id?)
                 Padding(
                   padding: const EdgeInsets.only(top: Space.xs),
@@ -228,14 +227,38 @@ class _DetailState extends ConsumerState<_Detail> {
                   ),
                 ],
               ),
-              const SizedBox(height: Space.xl),
-              _Tones(chord: _entry.chord, spelling: spelling),
               const SizedBox(height: Space.md),
               Text(
                 'Tap a string on the diagram to hear it alone.',
                 style: text.caption.copyWith(color: c.textTertiary),
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: Space.md),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: Space.sm,
+                runSpacing: Space.sm,
+                children: [
+                  GlassPill(
+                    label: 'Favourite',
+                    icon: favorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    semantics: favorite ? 'Remove from favourites' : 'Add to favourites',
+                    selected: favorite,
+                    onTap: () => ref.read(favoritesProvider.notifier).toggle(_entry.symbol),
+                  ),
+                  GlassPill(
+                    label: _advanced ? 'Hide advanced' : 'Advanced',
+                    icon: Icons.tune_rounded,
+                    semantics: _advanced ? 'Hide advanced' : 'Advanced: other shapes and notes',
+                    selected: _advanced,
+                    onTap: () => setState(() => _advanced = !_advanced),
+                  ),
+                ],
+              ),
+              if (_advanced) ...[
+                const SizedBox(height: Space.lg),
+                _Tones(chord: _entry.chord, spelling: spelling),
+              ],
             ],
           ),
         );

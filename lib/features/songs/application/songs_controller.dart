@@ -134,3 +134,23 @@ final class SongsController extends AsyncNotifier<List<SongEntry>> {
 
   static String _prefsKey(String id) => 'song.$id';
 }
+
+/// Ids of the songs opened most recently, newest first. Home lists them.
+final recentSongsProvider = NotifierProvider<RecentSongs, List<String>>(RecentSongs.new);
+
+final class RecentSongs extends Notifier<List<String>> {
+  static const _key = 'songs.recent';
+  static const _keep = 5;
+
+  @override
+  List<String> build() {
+    final raw = ref.watch(localStoreProvider).setting(_key);
+    return raw == null || raw.isEmpty ? const [] : raw.split('|');
+  }
+
+  void opened(String id) {
+    if (id.isEmpty || id.contains('|') || (state.isNotEmpty && state.first == id)) return;
+    state = [id, ...state.where((s) => s != id)].take(_keep).toList();
+    ref.read(localStoreProvider).setSetting(_key, state.join('|'));
+  }
+}

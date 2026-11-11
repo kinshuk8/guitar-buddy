@@ -10,10 +10,13 @@ import 'package:fretlight/core/design/theme.dart';
 import 'package:fretlight/core/design/tokens.dart';
 import 'package:fretlight/core/widgets/glass.dart';
 import 'package:fretlight/core/widgets/glass_controls.dart';
+import 'package:fretlight/core/widgets/screen_header.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
 import 'package:fretlight/features/metronome/application/metronome_controller.dart';
 import 'package:fretlight/features/metronome/domain/metronome_settings.dart';
 import 'package:fretlight/features/metronome/domain/transport.dart';
+import 'package:fretlight/features/tuner/presentation/tuner_button.dart';
+import 'package:go_router/go_router.dart';
 
 /// Tempo, beats, start. Meter and subdivision live in two quiet pills.
 ///
@@ -28,11 +31,13 @@ class MetronomeScreen extends ConsumerStatefulWidget {
 
 class _MetronomeScreenState extends ConsumerState<MetronomeScreen> {
   late final AppLifecycleListener _lifecycle;
+  late final MetronomeController _controller;
   final _tapClock = Stopwatch()..start();
 
   @override
   void initState() {
     super.initState();
+    _controller = ref.read(metronomeProvider.notifier);
     _lifecycle = AppLifecycleListener(
       onHide: () => unawaited(ref.read(metronomeProvider.notifier).stop()),
     );
@@ -40,6 +45,8 @@ class _MetronomeScreenState extends ConsumerState<MetronomeScreen> {
 
   @override
   void dispose() {
+    // Leaving the screen stops the click: nothing keeps ticking out of sight.
+    unawaited(_controller.stop());
     _lifecycle.dispose();
     super.dispose();
   }
@@ -57,6 +64,12 @@ class _MetronomeScreenState extends ConsumerState<MetronomeScreen> {
         padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 112),
         child: Column(
           children: [
+            ScreenHeader(
+              title: 'Metronome',
+              onBack: () => context.pop(),
+              actions: const [TunerButton()],
+            ),
+            const SizedBox(height: Space.md),
             Row(
               children: [
                 GlassPill(
@@ -70,8 +83,8 @@ class _MetronomeScreenState extends ConsumerState<MetronomeScreen> {
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: GlassPill(
-                      label: s.subdivision == Subdivision.none ? 'Subdivide' : s.subdivision.label,
-                      semantics: 'Subdivision: ${s.subdivision.label}. Change',
+                      label: 'Advanced',
+                      semantics: 'Advanced. Subdivision: ${s.subdivision.label}. Change',
                       chevron: true,
                       onTap: () => _showSubdivisionSheet(context),
                     ),
@@ -134,7 +147,7 @@ class _MetronomeScreenState extends ConsumerState<MetronomeScreen> {
   Future<void> _showSubdivisionSheet(BuildContext context) => showGlassSheet<void>(
     context,
     builder: (context) => _ChoiceSheet<Subdivision>(
-      title: 'Subdivision',
+      title: 'Advanced: subdivision',
       options: Subdivision.values,
       selected: (ref) => ref.watch(metronomeProvider.select((s) => s.settings.subdivision)),
       label: (s) => s.label,

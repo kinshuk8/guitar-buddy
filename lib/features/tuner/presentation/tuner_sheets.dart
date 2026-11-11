@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fretlight/core/design/theme.dart';
 import 'package:fretlight/core/design/tokens.dart';
 import 'package:fretlight/core/music/music.dart';
+import 'package:fretlight/core/storage/local_store.dart';
 import 'package:fretlight/core/widgets/glass.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
 import 'package:fretlight/features/tuner/application/tuner_controller.dart';
@@ -17,8 +18,25 @@ String tuningNotes(Tuning t) =>
 Future<void> showTuningSheet(BuildContext context) =>
     showGlassSheet<void>(context, builder: (_) => const _TuningSheet());
 
-Future<void> showReferenceSheet(BuildContext context) =>
-    showGlassSheet<void>(context, builder: (_) => const _ReferenceSheet());
+/// The options most players never need: reference pitch, your own tunings,
+/// and the raw frequency readout.
+Future<void> showTunerAdvancedSheet(BuildContext context) =>
+    showGlassSheet<void>(context, builder: (_) => const _AdvancedSheet());
+
+/// Whether the tuner shows the frequency in hertz under the note.
+final showHzProvider = NotifierProvider<ShowHzController, bool>(ShowHzController.new);
+
+final class ShowHzController extends Notifier<bool> {
+  static const _key = 'tuner.showHz';
+
+  @override
+  bool build() => ref.watch(localStoreProvider).setting(_key) == 'true';
+
+  void set({required bool value}) {
+    state = value;
+    ref.read(localStoreProvider).setSetting(_key, value ? 'true' : null);
+  }
+}
 
 class _SheetTitle extends StatelessWidget {
   const _SheetTitle(this.text);
@@ -62,21 +80,6 @@ class _TuningSheet extends ConsumerWidget {
                   )
                 : null,
           ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
-          child: StageButton.glass(
-            label: 'New custom tuning',
-            icon: Icons.add_rounded,
-            expand: true,
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await showGlassSheet<void>(
-                context,
-                builder: (_) => _CustomTuningEditor(base: state.tuning),
-              );
-            },
-          ),
-        ),
       ],
     );
   }
@@ -215,8 +218,8 @@ class _CustomTuningEditorState extends ConsumerState<_CustomTuningEditor> {
   }
 }
 
-class _ReferenceSheet extends ConsumerWidget {
-  const _ReferenceSheet();
+class _AdvancedSheet extends ConsumerWidget {
+  const _AdvancedSheet();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -229,7 +232,11 @@ class _ReferenceSheet extends ConsumerWidget {
       shrinkWrap: true,
       padding: const EdgeInsets.fromLTRB(0, 0, 0, Space.lg),
       children: [
-        const _SheetTitle('Reference pitch'),
+        const _SheetTitle('Advanced'),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.sm),
+          child: Text('REFERENCE PITCH', style: t.overline),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
           child: Row(
@@ -281,9 +288,43 @@ class _ReferenceSheet extends ConsumerWidget {
               onPressed: () => controller.setA4(PitchMath.defaultA4),
             ),
           ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.sm),
+          child: Text('YOUR OWN TUNING', style: t.overline),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+          child: StageButton.glass(
+            label: 'New custom tuning',
+            icon: Icons.add_rounded,
+            expand: true,
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await showGlassSheet<void>(
+                context,
+                builder: (_) => _CustomTuningEditor(base: state.tuning),
+              );
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, 0),
+          child: MergeSemantics(
+            child: Row(
+              children: [
+                Expanded(child: Text('Show frequency in hertz', style: t.body)),
+                Switch.adaptive(
+                  value: ref.watch(showHzProvider),
+                  activeTrackColor: c.textSecondary,
+                  onChanged: (v) => ref.read(showHzProvider.notifier).set(value: v),
+                ),
+              ],
+            ),
+          ),
+        ),
         if (input != null)
           Padding(
-            padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, 0),
+            padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, 0),
             child: Text(
               'Microphone: ${input.label}, ${(input.sampleRate / 1000).toStringAsFixed(1)} kHz. '
               'Audio is analysed on this phone and never recorded.',
