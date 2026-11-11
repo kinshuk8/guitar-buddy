@@ -17,6 +17,7 @@ final class ChordReading {
     this.strum = 0,
     this.settled = true,
     this.candidates = const [],
+    this.chroma = const [],
   });
 
   /// Null while unsure or for a single note.
@@ -45,6 +46,12 @@ final class ChordReading {
   /// it knows which chord you're aiming for, and checking that one chord is
   /// among the closest is far more forgiving than naming it from scratch.
   final List<ChordScore> candidates;
+
+  /// How strong each pitch class was over this strum (C first, length 12;
+  /// empty when unknown). Practice checks the target's own notes against
+  /// it: a minor third ringing where a major one belongs is a wrong chord,
+  /// whatever the closest name.
+  final List<double> chroma;
 
   static const notSureBelow = 0.35;
 
@@ -90,6 +97,10 @@ final class ChordSmoother {
   /// still half silence, half pick attack) count for less.
   final Map<Chord, ({double sum, double weight})> _acc = {};
 
+  /// The strum's chroma, weighted like the scores.
+  final List<double> _chroma = List.filled(12, 0);
+  double _chromaWeight = 0;
+
   /// Levels of the last few frames. A strum's rise is spread over several
   /// overlapping windows, so it's measured from the quietest of them, not
   /// from the frame just before.
@@ -131,6 +142,8 @@ final class ChordSmoother {
     _levels.clear();
     _building = false;
     _acc.clear();
+    _chroma.fillRange(0, 12, 0);
+    _chromaWeight = 0;
     _shown = null;
     _challenger = null;
     _challengerFrames = 0;
@@ -198,6 +211,8 @@ final class ChordSmoother {
     if (onset) {
       _avg.clear();
       _acc.clear();
+      _chroma.fillRange(0, 12, 0);
+      _chromaWeight = 0;
       _singles.clear();
       _sinceOnset = 0;
     }
@@ -215,6 +230,12 @@ final class ChordSmoother {
       );
       _acc[r.chord] = next;
       _avg[r.chord] = next.sum / next.weight;
+    }
+    if (e.chroma.length == 12) {
+      for (var i = 0; i < 12; i++) {
+        _chroma[i] = _chroma[i] * (1 - alpha) + w * e.chroma[i];
+      }
+      _chromaWeight = _chromaWeight * (1 - alpha) + w;
     }
 
     _singles.add(e.singleNote);
@@ -269,6 +290,7 @@ final class ChordSmoother {
     final confidence = 0.4 * level + 0.6 * margin;
     return _reading = ChordReading(
       candidates: [for (final r in ranked.take(6)) (chord: r.key, score: r.value)],
+      chroma: _chromaWeight == 0 ? const [] : [for (final v in _chroma) v / _chromaWeight],
       chord: confidence >= ChordReading.notSureBelow ? shown : null,
       confidence: confidence,
       bass: e.bass,

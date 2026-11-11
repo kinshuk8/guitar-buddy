@@ -24,7 +24,7 @@ Future<TestDevices> openIdentify(WidgetTester tester) async {
   final devices = TestDevices(library: library);
   await tester.pumpWidget(devices.app());
   await tester.pump();
-  await tester.tap(find.bySemanticsLabel('Identify'));
+  goTo(tester, '/tools/identify');
   await tester.pump();
   await settle(tester);
   return devices;
@@ -99,11 +99,11 @@ void main() {
   testWidgets('tuner and identifier share the mic across tab switches', (tester) async {
     final devices = await openIdentify(tester);
     expect(devices.mic.isCapturing, isTrue);
-    await tester.tap(find.bySemanticsLabel('Tune'));
+    goTo(tester, '/tuner');
     await tester.pump();
     await settle(tester);
     expect(devices.mic.isCapturing, isTrue, reason: 'the tuner now holds it');
-    await tester.tap(find.bySemanticsLabel('Chords'));
+    goTo(tester, '/tools/chords');
     await tester.pump();
     await settle(tester);
     expect(devices.mic.isCapturing, isFalse, reason: 'nobody is listening');

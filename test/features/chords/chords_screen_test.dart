@@ -23,7 +23,7 @@ Future<TestDevices> openChords(
   final devices = TestDevices(store: store, library: realAsset ? null : library);
   await tester.pumpWidget(devices.app());
   await tester.pump();
-  await tester.tap(find.bySemanticsLabel('Chords'));
+  goTo(tester, '/tools/chords');
   await tester.pump();
   // Asset read + background-isolate parse: real time, interleaved with pumps
   // so each step's completion is delivered.
@@ -43,6 +43,10 @@ Future<void> tapVisible(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle();
 }
 
+/// The library's vertical list (the root picker scrolls too, sideways).
+Finder get chordList =>
+    find.descendant(of: find.byType(CustomScrollView), matching: find.byType(Scrollable)).first;
+
 Future<void> settleAudio(WidgetTester tester) async {
   await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 400)));
   await tester.pumpAndSettle();
@@ -52,15 +56,31 @@ void main() {
   testWidgets('opens on C with only the everyday chords expanded', (tester) async {
     // The one test that loads the real asset through the app's own path.
     await openChords(tester, realAsset: true);
-    expect(find.text('Chords'), findsWidgets);
+    expect(find.text('Chord library'), findsWidgets);
     for (final name in ['C major', 'C minor', 'C dominant 7th', 'C major 7th']) {
+      // The header now has a row of labelled actions: later groups start
+      // below the fold.
+      await tester.scrollUntilVisible(
+        find.bySemanticsLabel(RegExp('^$name, \\d+ shapes?\$')),
+        200,
+        scrollable: chordList,
+      );
       expect(find.bySemanticsLabel(RegExp('^$name, \\d+ shapes?\$')), findsOneWidget, reason: name);
     }
     // Other groups are there, folded.
+    await tester.scrollUntilVisible(
+      find.bySemanticsLabel(RegExp(r'^Colour, \d+ chords$')),
+      200,
+      scrollable: chordList,
+    );
     expect(find.bySemanticsLabel(RegExp(r'^Colour, \d+ chords$')), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('^C add 9, ')), findsNothing);
     await tapVisible(tester, find.bySemanticsLabel(RegExp(r'^Colour, \d+ chords$')));
-    await tester.scrollUntilVisible(find.bySemanticsLabel(RegExp('^C add 9, ')), 200);
+    await tester.scrollUntilVisible(
+      find.bySemanticsLabel(RegExp('^C add 9, ')),
+      200,
+      scrollable: chordList,
+    );
     expect(find.bySemanticsLabel(RegExp('^C add 9, ')), findsOneWidget);
   });
 
@@ -73,6 +93,9 @@ void main() {
     await tapVisible(tester, find.bySemanticsLabel(RegExp(r'^A minor, \d+ shapes$')));
 
     expect(find.text('A minor'), findsOneWidget);
+    // One shape to start with; the rest are under Advanced.
+    expect(find.textContaining('Shape 1 of'), findsNothing);
+    await tapVisible(tester, find.bySemanticsLabel(RegExp('^Advanced')));
     expect(find.textContaining('Shape 1 of'), findsOneWidget);
 
     await tester.tap(find.text('Play'));
@@ -94,7 +117,7 @@ void main() {
     final store = LocalStore.memory();
     await openChords(tester, store: store);
     await tapVisible(tester, find.bySemanticsLabel(RegExp(r'^C major 7th, \d+ shapes$')));
-    await tester.tap(find.bySemanticsLabel('Add to favourites'));
+    await tapVisible(tester, find.bySemanticsLabel('Add to favourites'));
     await tester.pump();
     expect(store.favorites, {'Cmaj7'});
     expect(find.bySemanticsLabel('Remove from favourites'), findsOneWidget);

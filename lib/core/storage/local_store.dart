@@ -103,6 +103,17 @@ final class LocalStore {
   final Map<String, StoredDay> _days;
   final Map<String, double> _skills;
 
+  /// Nothing saved at all: a first launch, not an upgrade.
+  bool get isFresh =>
+      _settings.isEmpty &&
+      _favorites.isEmpty &&
+      _tunings.isEmpty &&
+      _songs.isEmpty &&
+      _chords.isEmpty &&
+      _lessons.isEmpty &&
+      _days.isEmpty &&
+      _skills.isEmpty;
+
   Map<String, StoredLesson> get lessons => Map.unmodifiable(_lessons);
   Map<String, StoredDay> get days => Map.unmodifiable(_days);
   Map<String, double> get skills => Map.unmodifiable(_skills);

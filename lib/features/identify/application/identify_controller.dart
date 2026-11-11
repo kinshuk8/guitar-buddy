@@ -113,6 +113,12 @@ final class IdentifyController extends Notifier<IdentifyState> {
   Future<void> _onStart(InputDescription description, Stream<Uint8List> pcm) async {
     final rate = description.sampleRate;
     final worker = _worker ??= await DspWorker.spawn(sampleRate: rate, chords: true);
+    // The screen can close while the worker spawns: nothing left to feed.
+    if (!ref.mounted) {
+      worker.dispose();
+      _worker = null;
+      return;
+    }
     worker.reset();
     final tuner = ref.read(tunerProvider);
     final sensitivity = ref.read(sensitivityProvider);

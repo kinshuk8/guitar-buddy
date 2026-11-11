@@ -3,6 +3,49 @@ import 'dart:typed_data';
 
 import 'package:fretlight/core/audio/synth/karplus_strong.dart';
 
+/// How one guitar differs from another: tests use these to check that
+/// listening holds up on more than one instrument.
+final class GuitarVoice {
+  const GuitarVoice(
+    this.name, {
+    this.brightness = 0,
+    this.ring = 1,
+    this.damping = 0,
+    this.body = true,
+  });
+
+  final String name;
+
+  /// Added to each string's brightness (pick attack and upper harmonics).
+  final double brightness;
+
+  /// Scales how long strings ring.
+  final double ring;
+
+  /// Added to each string's loop damping: how fast the highs die away.
+  final double damping;
+
+  /// Through the acoustic body's resonances, or straight from the strings.
+  final bool body;
+
+  /// A steel-string acoustic: what the app plays.
+  static const steel = GuitarVoice('steel');
+
+  /// New strings, a bright guitar.
+  static const bright = GuitarVoice('bright', brightness: 0.25, damping: -0.3, ring: 1.2);
+
+  /// A classical guitar: soft attack, warm, shorter sustain.
+  static const nylon = GuitarVoice('nylon', brightness: -0.25, damping: 0.2, ring: 0.7);
+
+  /// Old, dull strings: little top end and a quick decay.
+  static const dull = GuitarVoice('old strings', brightness: -0.3, damping: 0.3, ring: 0.45);
+
+  /// A thin, bodiless tone (an electric unplugged, a small travel guitar).
+  static const thin = GuitarVoice('thin', brightness: 0.1, body: false, ring: 0.8);
+
+  static const List<GuitarVoice> all = [steel, bright, nylon, dull, thin];
+}
+
 /// Renders a strummed (or single) set of plucked strings to mono PCM.
 ///
 /// [stringHz] is per string, lowest first; null = muted. Strings start
@@ -18,6 +61,7 @@ Float32List renderStrum({
   double seconds = 2.6,
   bool down = true,
   double peak = 0.8,
+  GuitarVoice voice = GuitarVoice.steel,
 }) {
   // [peak] <= 0 leaves the level as synthesised (for comparing strings).
   final total = (seconds * sampleRate).round();
@@ -38,9 +82,9 @@ Float32List renderStrum({
     final tone = synth.pluck(
       hz: hz,
       seconds: (total - start) / sampleRate,
-      brightness: 0.45 + 0.2 * low,
-      ring: 6 - 2.5 * low,
-      damping: 0.8 - 0.5 * low,
+      brightness: (0.45 + 0.2 * low + voice.brightness).clamp(0.05, 1.0),
+      ring: (6 - 2.5 * low) * voice.ring,
+      damping: (0.8 - 0.5 * low + voice.damping).clamp(0.0, 1.0),
       // A strum crosses the strings at slightly different points.
       pluckAt: 0.17 + 0.07 * low,
       // Later strings in a strum are hit a touch softer.
@@ -51,7 +95,7 @@ Float32List renderStrum({
     }
   }
 
-  GuitarBody(sampleRate).apply(out);
+  if (voice.body) GuitarBody(sampleRate).apply(out);
 
   // Short fade-out so the buffer never ends on a click.
   final fade = math.min(total, (0.12 * sampleRate).round());

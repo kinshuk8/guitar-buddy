@@ -8,49 +8,43 @@ import 'package:fretlight/core/design/tokens.dart';
 import 'package:fretlight/core/music/music.dart';
 import 'package:fretlight/core/widgets/glass.dart';
 import 'package:fretlight/core/widgets/music_text.dart';
+import 'package:fretlight/core/widgets/screen_header.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
 import 'package:fretlight/features/learn/application/progress_controller.dart';
 import 'package:fretlight/features/learn/domain/curriculum.dart';
 import 'package:fretlight/features/learn/domain/progress.dart';
 import 'package:fretlight/features/learn/presentation/learn_widgets.dart';
 import 'package:fretlight/features/learn/presentation/lesson_screen.dart';
+import 'package:fretlight/features/tuner/presentation/tuner_button.dart';
+import 'package:go_router/go_router.dart';
 
-/// The Learn tab: where you are, what to play today, and the path ahead.
-class LearnScreen extends ConsumerWidget {
-  const LearnScreen({super.key});
+/// Every lesson, in order: four stages from a first chord to barre shapes
+/// up the neck.
+class LessonsScreen extends ConsumerWidget {
+  const LessonsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final p = ref.watch(progressProvider);
-    final now = ref.watch(nowProvider)();
-    final t = context.stageText;
     return SafeArea(
       bottom: false,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, 120),
+        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 132),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Semantics(header: true, child: Text('Learn', style: t.display)),
-              ),
-              _StreakChip(days: p.streak(now)),
-            ],
+          ScreenHeader(
+            title: 'Lessons',
+            subtitle: '${p.totalStars} of ${allLessons.length * 3} stars',
+            onBack: () => context.pop(),
+            actions: const [TunerButton()],
           ),
           const SizedBox(height: Space.lg),
-          _LevelCard(progress: p),
-          const SizedBox(height: Space.md),
-          _TodayCard(progress: p, now: now),
-          const SizedBox(height: Space.md),
-          _NextCard(lesson: p.next, progress: p),
-          const SizedBox(height: Space.xl),
-          const SectionLabel('Skills'),
-          _Skills(progress: p),
-          const SizedBox(height: Space.xl),
-          _ChordMastery(progress: p),
+          NextLessonCard(lesson: p.next, progress: p),
+          // One list item per unit, not per stage: only what's near the
+          // screen is built, so the 55-lesson list opens without a hitch.
           for (final (i, stage) in curriculum.indexed) ...[
             const SizedBox(height: Space.xl),
             _StageSection(index: i, stage: stage, progress: p),
+            for (final unit in stage.units) _UnitPanel(unit: unit, progress: p),
           ],
         ],
       ),
@@ -58,8 +52,77 @@ class LearnScreen extends ConsumerWidget {
   }
 }
 
-class _StreakChip extends StatelessWidget {
-  const _StreakChip({required this.days});
+class _UnitPanel extends StatelessWidget {
+  const _UnitPanel({required this.unit, required this.progress});
+
+  final Unit unit;
+  final Progress progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.stage;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: Space.md),
+        Text(unit.title.toUpperCase(), style: context.stageText.overline),
+        const SizedBox(height: Space.xs),
+        GlassPanel(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              for (final (i, lesson) in unit.lessons.indexed) ...[
+                if (i > 0) Divider(height: 1, color: c.glassBorder),
+                _LessonTile(lesson: lesson, progress: progress),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// How far you've come: level, skills, and the chords you know.
+class ProgressScreen extends ConsumerWidget {
+  const ProgressScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final p = ref.watch(progressProvider);
+    final now = ref.watch(nowProvider)();
+    return SafeArea(
+      bottom: false,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 132),
+        children: [
+          ScreenHeader(
+            title: 'Your progress',
+            onBack: () => context.pop(),
+            actions: [
+              StreakChip(days: p.streak(now)),
+              const TunerButton(),
+            ],
+          ),
+          const SizedBox(height: Space.lg),
+          LevelCard(progress: p),
+          const SectionLabel('Skills'),
+          SkillsPanel(progress: p),
+          ChordMasteryPanel(progress: p),
+          if (p.totalStars == 0)
+            EmptyState(
+              message: 'Chords you learn show up here, with how well you know each one.',
+              action: 'Start the first lesson',
+              onAction: () => openLesson(context, ref, p.next),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class StreakChip extends StatelessWidget {
+  const StreakChip({required this.days, super.key});
 
   final int days;
 
@@ -68,6 +131,7 @@ class _StreakChip extends StatelessWidget {
     final c = context.stage;
     final t = context.stageText;
     return Semantics(
+      container: true,
       label: days == 0 ? 'No streak yet' : '$days day streak',
       excludeSemantics: true,
       child: GlassPanel(
@@ -92,8 +156,8 @@ class _StreakChip extends StatelessWidget {
   }
 }
 
-class _LevelCard extends StatelessWidget {
-  const _LevelCard({required this.progress});
+class LevelCard extends StatelessWidget {
+  const LevelCard({required this.progress, super.key});
 
   final Progress progress;
 
@@ -143,8 +207,8 @@ class _LevelCard extends StatelessWidget {
   }
 }
 
-class _TodayCard extends ConsumerWidget {
-  const _TodayCard({required this.progress, required this.now});
+class TodayCard extends ConsumerWidget {
+  const TodayCard({required this.progress, required this.now, super.key});
 
   final Progress progress;
   final DateTime now;
@@ -254,8 +318,8 @@ class _TodayCard extends ConsumerWidget {
   }
 }
 
-class _NextCard extends ConsumerWidget {
-  const _NextCard({required this.lesson, required this.progress});
+class NextLessonCard extends ConsumerWidget {
+  const NextLessonCard({required this.lesson, required this.progress, super.key});
 
   final Lesson lesson;
   final Progress progress;
@@ -305,8 +369,8 @@ class _NextCard extends ConsumerWidget {
   }
 }
 
-class _Skills extends StatelessWidget {
-  const _Skills({required this.progress});
+class SkillsPanel extends StatelessWidget {
+  const SkillsPanel({required this.progress, super.key});
 
   final Progress progress;
 
@@ -350,8 +414,8 @@ class _Skills extends StatelessWidget {
 }
 
 /// Chords you've met, by how well you know them, and change-race bests.
-class _ChordMastery extends StatelessWidget {
-  const _ChordMastery({required this.progress});
+class ChordMasteryPanel extends StatelessWidget {
+  const ChordMasteryPanel({required this.progress, super.key});
 
   final Progress progress;
 
@@ -464,22 +528,6 @@ class _StageSection extends ConsumerWidget {
             icon: Icons.lock_open_rounded,
             expand: true,
             onPressed: () => _confirmJump(context, ref),
-          ),
-        ],
-        for (final unit in stage.units) ...[
-          const SizedBox(height: Space.md),
-          Text(unit.title.toUpperCase(), style: t.overline),
-          const SizedBox(height: Space.xs),
-          GlassPanel(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                for (final (i, lesson) in unit.lessons.indexed) ...[
-                  if (i > 0) Divider(height: 1, color: c.glassBorder),
-                  _LessonTile(lesson: lesson, progress: progress),
-                ],
-              ],
-            ),
           ),
         ],
       ],

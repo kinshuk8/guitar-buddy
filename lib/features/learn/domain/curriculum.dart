@@ -212,6 +212,12 @@ final class Lesson {
 
   bool get listens => steps.any((s) => s.listens);
 
+  /// Free practice (a chord drill, a change race) rather than a lesson on
+  /// the path: it builds mastery and practice time but earns no stars.
+  bool get isDrill => id.startsWith(drillPrefix);
+
+  static const drillPrefix = 'drill:';
+
   /// Chord symbols the lesson asks for, in order of appearance.
   List<String> get chords {
     final out = <String>[];
@@ -893,6 +899,83 @@ const curriculum = <Stage>[
 /// Every lesson in path order.
 final List<Lesson> allLessons = [for (final s in curriculum) ...s.lessons];
 
+/// A new player's first sitting, offered once after the welcome screens:
+/// tune up, one chord, one change. Not part of the path, so it never
+/// locks or unlocks anything.
+const firstSession = Lesson(
+  id: 'first-session',
+  title: 'Your first session',
+  about: 'Tune up, play your first chord, then change to a second one. About five minutes.',
+  tip: 'Press with your fingertips, just behind the fret, and let every string ring.',
+  skill: Skill.chords,
+  xp: 30,
+  steps: [
+    NoteSteps(_open, tuneCents: 10),
+    ChordSteps(['Em'], repeat: 4),
+    ChordSteps(['Em', 'Am'], repeat: 3),
+  ],
+);
+
 Lesson? lessonById(String id) => allLessons.where((l) => l.id == id).firstOrNull;
 
 Stage stageOf(Lesson lesson) => curriculum.firstWhere((s) => s.lessons.contains(lesson));
+
+/// Every chord the course teaches, as it first appears (a spec such as
+/// `G` or `Bm:x24432`), grouped by the stage that introduces it.
+final List<({Stage stage, List<String> specs})> chordsByStage = () {
+  final seen = <String>{};
+  return [
+    for (final stage in curriculum)
+      (
+        stage: stage,
+        specs: [
+          for (final lesson in stage.lessons)
+            for (final step in lesson.steps)
+              for (final spec in switch (step) {
+                ChordSteps(:final chords) => chords,
+                ChangeRace(:final a, :final b) => [a, b],
+                RhythmSteps(:final chord) => [chord],
+                _ => const <String>[],
+              })
+                if (seen.add(chordSymbolOf(spec))) spec,
+        ],
+      ),
+  ];
+}();
+
+/// The teaching spec for [symbol] (`Bm` → `Bm:x24432`), or the symbol
+/// itself for a chord the course doesn't teach.
+String chordSpecFor(String symbol) {
+  for (final g in chordsByStage) {
+    for (final spec in g.specs) {
+      if (chordSymbolOf(spec) == symbol) return spec;
+    }
+  }
+  return symbol;
+}
+
+/// Five clean strums of one chord: a free drill.
+Lesson chordDrill(String symbol) => Lesson(
+  id: '${Lesson.drillPrefix}chord:$symbol',
+  title: '$symbol drill',
+  about: 'Five clean strums. Lift your hand off between strums so each one is a fresh shape.',
+  tip: 'Every string should ring. If one buzzes or is muted, press closer to the fret.',
+  skill: Skill.chords,
+  xp: 10,
+  steps: [
+    ChordSteps([chordSpecFor(symbol)], repeat: 5),
+  ],
+);
+
+/// Back and forth between two chords, untimed: it waits for each one.
+Lesson changeDrill(String a, String b) => Lesson(
+  id: '${Lesson.drillPrefix}change:$a|$b',
+  title: '$a to $b',
+  about: 'Switch between $a and $b, four times each way. Take your time; it waits for you.',
+  tip: 'Look for a finger that stays put or slides between the two shapes, and move it first.',
+  skill: Skill.changes,
+  xp: 10,
+  steps: [
+    ChordSteps([chordSpecFor(a), chordSpecFor(b)], repeat: 4),
+  ],
+);

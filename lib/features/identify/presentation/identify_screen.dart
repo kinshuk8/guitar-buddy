@@ -14,6 +14,7 @@ import 'package:fretlight/core/widgets/glass.dart';
 import 'package:fretlight/core/widgets/listening.dart';
 import 'package:fretlight/core/widgets/mic_level.dart';
 import 'package:fretlight/core/widgets/music_text.dart';
+import 'package:fretlight/core/widgets/screen_header.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
 import 'package:fretlight/features/chords/application/chord_library_provider.dart';
 import 'package:fretlight/features/chords/presentation/chords_screen.dart' show openChord;
@@ -22,6 +23,8 @@ import 'package:fretlight/features/identify/domain/chord_smoother.dart';
 import 'package:fretlight/features/identify/domain/note_session.dart';
 import 'package:fretlight/features/settings/application/appearance.dart';
 import 'package:fretlight/features/tuner/application/tuner_controller.dart';
+import 'package:fretlight/features/tuner/presentation/tuner_button.dart';
+import 'package:go_router/go_router.dart';
 
 /// Hear a note or a chord and name it.
 class IdentifyScreen extends ConsumerWidget {
@@ -41,6 +44,13 @@ class IdentifyScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 112),
           child: Column(
             children: [
+              ScreenHeader(
+                title: 'Identify',
+                subtitle: 'Names the note or chord you play',
+                onBack: () => context.pop(),
+                actions: const [TunerButton()],
+              ),
+              const SizedBox(height: Space.md),
               Center(
                 child: SizedBox(
                   width: 240,

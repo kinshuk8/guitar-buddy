@@ -11,7 +11,7 @@ Future<TestDevices> openTempo(WidgetTester tester, {LocalStore? store}) async {
   final devices = TestDevices(store: store);
   await tester.pumpWidget(devices.app());
   await tester.pump();
-  await tester.tap(find.bySemanticsLabel('Tempo'));
+  goTo(tester, '/tools/metronome');
   await tester.pumpAndSettle();
   return devices;
 }
@@ -72,7 +72,7 @@ void main() {
     final devices = await openTempo(tester);
     await tester.tap(find.text('Start'));
     await settle(tester);
-    await tester.tap(find.bySemanticsLabel('Chords'));
+    goTo(tester, '/tools/chords');
     await tester.pump();
     expect(devices.speaker.loops.single.stop, isNull, reason: 'practise chords to the click');
 

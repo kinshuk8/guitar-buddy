@@ -19,12 +19,10 @@ final class Destination {
 }
 
 const destinations = [
-  Destination('Learn', Icons.school_rounded, '/learn'),
-  Destination('Tune', Icons.tune_rounded, '/tune'),
-  Destination('Identify', Icons.graphic_eq_rounded, '/identify'),
-  Destination('Chords', Icons.grid_view_rounded, '/chords'),
-  Destination('Tempo', Icons.av_timer_rounded, '/tempo'),
+  Destination('Home', Icons.home_rounded, '/home'),
+  Destination('Practice', Icons.school_rounded, '/practice'),
   Destination('Songs', Icons.queue_music_rounded, '/songs'),
+  Destination('Tools', Icons.handyman_rounded, '/tools'),
 ];
 
 /// App frame: ambient backdrop + a floating glass tab bar in thumb reach.
@@ -40,14 +38,15 @@ class StageShell extends StatelessWidget {
     body: AmbientBackground(child: shell),
     bottomNavigationBar: StageNavBar(
       index: shell.currentIndex,
+      // Tapping the tab you're on takes you back to its first screen.
       onSelect: (i) => shell.goBranch(i, initialLocation: i == shell.currentIndex),
     ),
   );
 }
 
-/// Floating frosted capsule. Only the active tab shows its label, which keeps
-/// the bar calm while still naming where you are (all tabs are labelled for
-/// screen readers).
+/// Floating frosted capsule. Four tabs of equal width, each always showing
+/// its name: a tab is in the same place, saying the same thing, wherever
+/// you are.
 class StageNavBar extends StatelessWidget {
   const StageNavBar({required this.index, required this.onSelect, super.key});
 
@@ -77,8 +76,8 @@ class StageNavBar extends StatelessWidget {
               children: [
                 for (var i = 0; i < destinations.length; i++)
                   Expanded(
-                    flex: i == index ? 2 : 1,
                     child: Semantics(
+                      container: true,
                       button: true,
                       selected: i == index,
                       label: destinations[i].label,
@@ -92,12 +91,12 @@ class StageNavBar extends StatelessWidget {
                         child: AnimatedContainer(
                           duration: motion.standard,
                           curve: MotionTokens.move,
-                          height: Space.touchTarget,
+                          height: 52,
                           decoration: BoxDecoration(
                             color: i == index ? c.glassFillStrong : null,
                             borderRadius: const BorderRadius.all(Radii.pill),
                           ),
-                          child: Row(
+                          child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
@@ -105,18 +104,18 @@ class StageNavBar extends StatelessWidget {
                                 size: 22,
                                 color: i == index ? c.textPrimary : c.textTertiary,
                               ),
-                              if (i == index) ...[
-                                const SizedBox(width: Space.sm - 2),
-                                Flexible(
-                                  child: Text(
-                                    destinations[i].label,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.clip,
-                                    softWrap: false,
-                                    style: context.stageText.label.copyWith(fontSize: 14),
-                                  ),
+                              const SizedBox(height: 2),
+                              Text(
+                                destinations[i].label,
+                                maxLines: 1,
+                                softWrap: false,
+                                overflow: TextOverflow.fade,
+                                style: context.stageText.label.copyWith(
+                                  fontSize: 11,
+                                  height: 1.1,
+                                  color: i == index ? c.textPrimary : c.textSecondary,
                                 ),
-                              ],
+                              ),
                             ],
                           ),
                         ),

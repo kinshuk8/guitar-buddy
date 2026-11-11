@@ -94,7 +94,7 @@ void main() {
     tester,
   ) async {
     await openSongs(tester);
-    await tester.tap(find.text('Progressions'));
+    goTo(tester, '/practice/progressions');
     await tester.pumpAndSettle();
     expect(
       find.bySemanticsLabel(RegExp(r'^E minor, C major, G major, D major\. In ')),
@@ -119,7 +119,7 @@ void main() {
 
   testWidgets('the summary names the chords that need work', (tester) async {
     final devices = await openSongs(tester);
-    await tester.tap(find.text('Progressions'));
+    goTo(tester, '/practice/progressions');
     await tester.pumpAndSettle();
     await tester.tap(find.bySemanticsLabel(RegExp(r'^E minor, C major, G major, D major\. In ')));
     await tester.pumpAndSettle();

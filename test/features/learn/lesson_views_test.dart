@@ -98,11 +98,13 @@ void main() {
     expect(find.text('Start'), findsOneWidget);
   });
 
-  testWidgets('the Learn tab fits a small phone, top to bottom', (tester) async {
+  testWidgets('the lesson list fits a small phone, top to bottom', (tester) async {
     tester.view.physicalSize = const Size(750, 1334);
     tester.view.devicePixelRatio = 2;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(TestDevices(library: library).app());
+    await tester.pumpAndSettle();
+    goTo(tester, '/practice/lessons');
     await tester.pumpAndSettle();
     await tester.dragUntilVisible(
       find.text('Beautiful Dreamer'),

@@ -7,15 +7,16 @@ import 'package:fretlight/core/design/motion.dart';
 import 'package:fretlight/core/design/theme.dart';
 import 'package:fretlight/core/design/tokens.dart';
 import 'package:fretlight/core/music/music.dart';
+import 'package:fretlight/core/widgets/glass.dart';
 import 'package:fretlight/core/widgets/glass_controls.dart';
 import 'package:fretlight/core/widgets/listening.dart';
 import 'package:fretlight/core/widgets/mic_level.dart';
 import 'package:fretlight/core/widgets/music_text.dart';
+import 'package:fretlight/core/widgets/screen_header.dart';
 import 'package:fretlight/features/tuner/application/tuner_controller.dart';
 import 'package:fretlight/features/tuner/domain/tuner_session.dart';
 import 'package:fretlight/features/tuner/presentation/tuner_gauge.dart';
 import 'package:fretlight/features/tuner/presentation/tuner_sheets.dart';
-import 'package:go_router/go_router.dart';
 
 class TunerScreen extends ConsumerStatefulWidget {
   const TunerScreen({super.key});
@@ -32,52 +33,62 @@ class _TunerScreenState extends ConsumerState<TunerScreen> {
     return ListenWhileVisible(
       onChanged: ({required active}) =>
           unawaited(ref.read(tunerProvider.notifier).setActive(active: active)),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          // Bottom padding clears the floating tab bar.
-          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 112),
-          child: Column(
-            children: [
-              const _TopBar(),
-              Expanded(
-                child: switch (status) {
-                  TunerStatus.needsPermission => MicBlocked(
-                    title: 'Microphone needed',
-                    body: 'The tuner listens to your guitar. Nothing is recorded or leaves your phone.',
-                    action: 'Allow microphone',
-                    onAction: () => ref.read(tunerProvider.notifier).requestPermission(),
-                  ),
-                  TunerStatus.permanentlyDenied => MicBlocked(
-                    title: 'Microphone is off',
-                    body: 'Turn on microphone access for Fretlight in Settings to use the tuner.',
-                    action: 'Open Settings',
-                    onAction: () => ref.read(tunerProvider.notifier).openSettings(),
-                  ),
-                  TunerStatus.error => MicBlocked(
-                    title: 'Couldn’t start the microphone',
-                    body: 'Another app may be using it.',
-                    action: 'Try again',
-                    onAction: () async {
-                      final n = ref.read(tunerProvider.notifier);
-                      await n.setActive(active: false);
-                      await n.setActive(active: true);
+      // Full screen, opened on top of wherever you were: Back returns there.
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: AmbientBackground(
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, Space.md),
+              child: Column(
+                children: [
+                  ScreenHeader(title: 'Tuner', onBack: () => Navigator.of(context).maybePop()),
+                  const SizedBox(height: Space.md),
+                  const _TopBar(),
+                  Expanded(
+                    child: switch (status) {
+                      TunerStatus.needsPermission => MicBlocked(
+                        title: 'Microphone needed',
+                        body: 'The tuner listens to your guitar. Nothing is recorded or leaves your phone.',
+                        action: 'Allow microphone',
+                        onAction: () => ref.read(tunerProvider.notifier).requestPermission(),
+                      ),
+                      TunerStatus.permanentlyDenied => MicBlocked(
+                        title: 'Microphone is off',
+                        body:
+                            'Turn on microphone access for Fretlight in Settings to use the tuner.',
+                        action: 'Open Settings',
+                        onAction: () => ref.read(tunerProvider.notifier).openSettings(),
+                      ),
+                      TunerStatus.error => MicBlocked(
+                        title: 'Couldn’t start the microphone',
+                        body: 'Another app may be using it.',
+                        action: 'Try again',
+                        onAction: () async {
+                          final n = ref.read(tunerProvider.notifier);
+                          await n.setActive(active: false);
+                          await n.setActive(active: true);
+                        },
+                      ),
+                      _ => const _Live(),
                     },
                   ),
-                  _ => const _Live(),
-                },
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: Space.sm),
+                    child: MicLevelMeter(),
+                  ),
+                  if (status == TunerStatus.interrupted)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: Space.md),
+                      child: Text(
+                        'Paused while another app uses the microphone',
+                        style: text.caption,
+                      ),
+                    ),
+                  const _StringRow(),
+                ],
               ),
-              const Padding(
-                padding: EdgeInsets.only(bottom: Space.sm),
-                child: MicLevelMeter(),
-              ),
-              if (status == TunerStatus.interrupted)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: Space.md),
-                  child: Text('Paused while another app uses the microphone', style: text.caption),
-                ),
-              const _StringRow(),
-            ],
+            ),
           ),
         ),
       ),
@@ -91,7 +102,6 @@ class _TopBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tuning = ref.watch(tunerProvider.select((s) => s.tuning));
-    final a4 = ref.watch(tunerProvider.select((s) => s.a4));
     return Row(
       children: [
         GlassPill(
@@ -102,15 +112,10 @@ class _TopBar extends ConsumerWidget {
         ),
         const Spacer(),
         GlassPill(
-          label: '${a4.round()} Hz',
-          semantics: 'Reference pitch ${a4.round()} hertz. Change',
-          onTap: () => showReferenceSheet(context),
-        ),
-        const SizedBox(width: Space.sm),
-        GlassIconButton(
-          icon: Icons.settings_outlined,
-          semantics: 'Settings',
-          onTap: () => context.push('/settings'),
+          label: 'Advanced',
+          semantics: 'Advanced: reference pitch, custom tunings, frequency',
+          onTap: () => showTunerAdvancedSheet(context),
+          chevron: true,
         ),
       ],
     );
@@ -132,6 +137,7 @@ class _LiveState extends ConsumerState<_Live> {
   Widget build(BuildContext context) {
     final reading = ref.watch(tunerProvider.select((s) => s.reading));
     final status = ref.watch(tunerProvider.select((s) => s.status));
+    final showHz = ref.watch(showHzProvider);
     final t = context.stageText;
     final state = reading == null ? null : TuningState.fromCents(reading.cents);
 
@@ -157,9 +163,11 @@ class _LiveState extends ConsumerState<_Live> {
               child: reading == null
                   ? Text(_idleHint(status), style: t.caption)
                   : Text(
-                      reading.detected == reading.target
-                          ? '${reading.hz.toStringAsFixed(1)} Hz'
-                          : 'Tuning to ${_noteLabel(reading.target)} · ${reading.hz.toStringAsFixed(1)} Hz',
+                      [
+                        if (reading.detected != reading.target)
+                          'Tuning to ${_noteLabel(reading.target)}',
+                        if (showHz) '${reading.hz.toStringAsFixed(1)} Hz',
+                      ].join(' · '),
                       style: t.caption.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
                     ),
             ),

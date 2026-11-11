@@ -9,18 +9,16 @@ import 'package:fretlight/core/design/theme.dart';
 import 'package:fretlight/core/design/tokens.dart';
 import 'package:fretlight/core/widgets/glass.dart';
 import 'package:fretlight/core/widgets/glass_controls.dart';
+import 'package:fretlight/core/widgets/screen_header.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
 import 'package:fretlight/features/chords/application/chord_library_provider.dart';
-import 'package:fretlight/features/progressions/data/progression_pack.dart';
-import 'package:fretlight/features/progressions/presentation/progressions_view.dart';
 import 'package:fretlight/features/songs/application/songs_controller.dart';
 import 'package:fretlight/features/songs/domain/chordpro.dart';
+import 'package:fretlight/features/tuner/presentation/tuner_button.dart';
 import 'package:go_router/go_router.dart';
 
 void openSong(BuildContext context, String id) =>
     unawaited(context.push('/songs/play?id=${Uri.encodeQueryComponent(id)}'));
-
-enum _View { songs, progressions }
 
 /// Your songs first, then the public-domain starters; and, when the
 /// optional pack is installed, common progressions to practise.
@@ -32,13 +30,9 @@ class SongsScreen extends ConsumerStatefulWidget {
 }
 
 class _SongsScreenState extends ConsumerState<SongsScreen> {
-  _View _view = _View.songs;
-
   @override
   Widget build(BuildContext context) {
     final songs = ref.watch(songsProvider);
-    final pack = ref.watch(progressionPackProvider).value;
-    final view = pack == null ? _View.songs : _view;
     final t = context.stageText;
     final c = context.stage;
     return SafeArea(
@@ -48,77 +42,59 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
             sliver: SliverToBoxAdapter(
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: Semantics(header: true, child: Text('Songs', style: t.display)),
+                  const ScreenHeader(title: 'Songs', large: true, actions: [TunerButton()]),
+                  const SizedBox(height: Space.lg),
+                  StageButton.glass(
+                    label: 'Add a song',
+                    icon: Icons.add_rounded,
+                    expand: true,
+                    onPressed: () => showSongEditor(context),
                   ),
-                  if (view == _View.songs)
-                    GlassIconButton(
-                      icon: Icons.add_rounded,
-                      semantics: 'Add a song',
-                      onTap: () => showSongEditor(context),
-                    ),
                 ],
               ),
             ),
           ),
-          if (pack != null)
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, 0),
-              sliver: SliverToBoxAdapter(
-                child: StageSegmented<_View>(
-                  options: _View.values,
-                  selected: view,
-                  labelOf: (v) => switch (v) {
-                    _View.songs => 'Songs',
-                    _View.progressions => 'Progressions',
-                  },
-                  onChanged: (v) => setState(() => _view = v),
+          ...switch (songs) {
+            AsyncData(:final value) => [
+              if (value.any((e) => !e.bundled)) ...[
+                _header('Your songs'),
+                _list(value.where((e) => !e.bundled).toList()),
+              ],
+              _header('Starter songs'),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                  Space.gutter + Space.xs,
+                  0,
+                  Space.gutter,
+                  Space.md,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: Text(
+                    'Traditional and public-domain songs, arranged for beginners.',
+                    style: t.caption.copyWith(color: c.textTertiary),
+                  ),
                 ),
               ),
-            ),
-          if (view == _View.progressions && pack != null)
-            ...progressionSlivers(context, pack)
-          else
-            ...switch (songs) {
-              AsyncData(:final value) => [
-                if (value.any((e) => !e.bundled)) ...[
-                  _header('Your songs'),
-                  _list(value.where((e) => !e.bundled).toList()),
-                ],
-                _header('Starter songs'),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    Space.gutter + Space.xs,
-                    0,
-                    Space.gutter,
-                    Space.md,
-                  ),
-                  sliver: SliverToBoxAdapter(
-                    child: Text(
-                      'Traditional and public-domain songs, arranged for beginners.',
-                      style: t.caption.copyWith(color: c.textTertiary),
-                    ),
-                  ),
+              _list(value.where((e) => e.bundled).toList()),
+            ],
+            AsyncError() => [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(Space.gutter),
+                  child: Text('Songs could not be loaded.', style: t.bodySecondary),
                 ),
-                _list(value.where((e) => e.bundled).toList()),
-              ],
-              AsyncError() => [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(Space.gutter),
-                    child: Text('Songs could not be loaded.', style: t.bodySecondary),
-                  ),
-                ),
-              ],
-              _ => [
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator.adaptive(strokeWidth: 2)),
-                ),
-              ],
-            },
+              ),
+            ],
+            _ => [
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: CircularProgressIndicator.adaptive(strokeWidth: 2)),
+              ),
+            ],
+          },
           // Developer tool: compiled out of release builds.
           if (kDebugMode)
             SliverToBoxAdapter(

@@ -77,10 +77,15 @@ void main() {
     tester,
   ) async {
     await openApp(tester);
-    expect(find.text('Learn'), findsWidgets);
-    expect(find.text('Beginner'), findsWidgets);
-    expect(find.textContaining('Level 1 · 0 XP'), findsOneWidget);
+    // Home offers the first lesson straight away.
     expect(find.bySemanticsLabel(RegExp('^Up next: The six strings')), findsOneWidget);
+    goTo(tester, '/practice/progress');
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Level 1 · 0 XP'), findsOneWidget);
+    goTo(tester, '/practice/lessons');
+    await tester.pumpAndSettle();
+    expect(find.text('Lessons'), findsWidgets);
+    expect(find.text('Beginner'), findsWidgets);
     await tester.scrollUntilVisible(
       find.text('E minor'),
       300,
@@ -140,6 +145,8 @@ void main() {
     await tester.tap(find.text('Back to lessons'));
     await tester.pumpAndSettle();
     expect(find.bySemanticsLabel(RegExp('^Up next: Tune up')), findsOneWidget);
+    goTo(tester, '/practice/progress');
+    await tester.pumpAndSettle();
     expect(find.textContaining('Level 1 · 40 XP'), findsOneWidget);
   });
 
@@ -171,6 +178,8 @@ void main() {
   testWidgets('jumping ahead opens a later stage', (tester) async {
     final store = LocalStore.memory();
     await openApp(tester, store: store);
+    goTo(tester, '/practice/lessons');
+    await tester.pumpAndSettle();
     final jump = find.text('I can already play this: start here');
     await tester.dragUntilVisible(jump, find.byType(ListView), const Offset(0, -300));
     await tester.pumpAndSettle();
@@ -178,7 +187,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Start at Improver'));
     await tester.pumpAndSettle();
-    final container = ProviderScope.containerOf(tester.element(find.byType(LearnScreen)));
+    final container = ProviderScope.containerOf(tester.element(find.byType(LessonsScreen)));
     expect(container.read(progressProvider).openStage, 1);
     expect(store.setting('learn.jumpedTo'), '1');
   });

@@ -245,6 +245,28 @@ double updatedMastery(double current, ({int clean, int missed}) result) {
   return v.clamp(0, 100).toDouble();
 }
 
+/// Bronze, silver and gold targets for a one-minute race between [a] and
+/// [b], set by how well you know them.
+(int, int, int) raceTargets(Progress p, String a, String b) {
+  final avg = (p.mastery(a) + p.mastery(b)) / 2;
+  return avg < 40
+      ? (10, 18, 26)
+      : avg < 75
+      ? (16, 24, 34)
+      : (24, 34, 44);
+}
+
+/// A one-minute race between two chords: as many clean changes as you can.
+Lesson raceDrill(Progress p, String a, String b) => Lesson(
+  id: '${Lesson.drillPrefix}race:$a|$b',
+  title: '$a and $b race',
+  about: 'One minute. Change between $a and $b as many times as you can, cleanly.',
+  tip: 'Speed comes from not lifting your fingers further than you need to.',
+  skill: Skill.changes,
+  xp: 15,
+  steps: [ChangeRace(chordSpecFor(a), chordSpecFor(b), targets: raceTargets(p, a, b))],
+);
+
 /// Today's chord workout: the chords you know, weakest first. A drill on
 /// the weakest, a one-minute race between the two weakest, and a run
 /// through the weakest four.
@@ -253,12 +275,7 @@ Lesson dailyWorkout(Progress p) {
   final a = chords[0];
   final b = chords[1];
   final four = chords.take(4).toList();
-  final avg = (p.mastery(a) + p.mastery(b)) / 2;
-  final targets = avg < 40
-      ? (10, 18, 26)
-      : avg < 75
-      ? (16, 24, 34)
-      : (24, 34, 44);
+  final targets = raceTargets(p, a, b);
   return Lesson(
     id: 'workout',
     title: 'Daily chord workout',

@@ -49,13 +49,16 @@ int _starsFor(double value, (num, num, num) at) => value >= at.$3
 final class ChordGame {
   ChordGame._(this.session, {this.race});
 
-  factory ChordGame.steps(List<String> specs) =>
-      ChordGame._(PracticeSession([for (final s in specs) Chord.parse(chordSymbolOf(s))]));
+  factory ChordGame.steps(List<String> specs, {ChordMatching matching = ChordMatching.normal}) =>
+      ChordGame._(
+        PracticeSession([for (final s in specs) Chord.parse(chordSymbolOf(s))], matching: matching),
+      );
 
-  factory ChordGame.song(List<Chord> chords) => ChordGame._(PracticeSession(chords));
+  factory ChordGame.song(List<Chord> chords, {ChordMatching matching = ChordMatching.normal}) =>
+      ChordGame._(PracticeSession(chords, matching: matching));
 
   /// Alternates the pair for as long as the clock allows.
-  factory ChordGame.race(ChangeRace race) {
+  factory ChordGame.race(ChangeRace race, {ChordMatching matching = ChordMatching.normal}) {
     final a = Chord.parse(chordSymbolOf(race.a));
     final b = Chord.parse(chordSymbolOf(race.b));
     // Far more than anyone can play in the time: the clock ends it.
@@ -63,7 +66,7 @@ final class ChordGame {
       PracticeSession([
         for (var i = 0; i < 400; i++)
           if (i.isEven) a else b,
-      ]),
+      ], matching: matching),
       race: race,
     );
   }

@@ -19,12 +19,13 @@ import 'package:fretlight/features/chords/application/chord_player.dart';
 import 'package:fretlight/features/practice/application/practice_controller.dart';
 import 'package:fretlight/features/practice/domain/practice_session.dart';
 import 'package:fretlight/features/settings/application/appearance.dart';
+import 'package:fretlight/features/tuner/presentation/tuner_button.dart';
 import 'package:go_router/go_router.dart';
 
 /// Starts practising [plan] and opens the practice screen.
 void startPractice(BuildContext context, WidgetRef ref, PracticePlan plan) {
   ref.read(practiceProvider.notifier).begin(plan);
-  unawaited(context.push('/practice'));
+  unawaited(context.push('/drill'));
 }
 
 class PracticeScreen extends ConsumerWidget {
@@ -38,80 +39,86 @@ class PracticeScreen extends ConsumerWidget {
     final session = state.session;
     final t = context.stageText;
     final c = context.stage;
-    return ListenWhileVisible(
-      onChanged: ({required active}) => unawaited(controller.setActive(active: active)),
-      // Full screen (no tab bar): practice is one task at a time.
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: AmbientBackground(
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, Space.md),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      GlassIconButton(
-                        icon: Icons.arrow_back_ios_new_rounded,
-                        semantics: 'Back',
-                        onTap: () => context.pop(),
-                      ),
-                      const SizedBox(width: Space.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              plan?.title ?? 'Practice',
-                              style: t.heading,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              'Practice · waits for each chord',
-                              style: t.caption.copyWith(color: c.textTertiary),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+    return _OnClose(
+      onClose: controller.leave,
+      child: ListenWhileVisible(
+        onChanged: ({required active}) => unawaited(controller.setActive(active: active)),
+        // Full screen (no tab bar): practice is one task at a time.
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: AmbientBackground(
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, Space.md),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        GlassIconButton(
+                          icon: Icons.arrow_back_ios_new_rounded,
+                          semantics: 'Back',
+                          onTap: () => context.pop(),
                         ),
-                      ),
-                      if (session != null && !session.done)
-                        Text(
-                          '${session.index + 1} / ${session.targets.length}',
-                          style: t.label.copyWith(
-                            color: c.textSecondary,
-                            fontFeatures: const [FontFeature.tabularFigures()],
+                        const SizedBox(width: Space.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                plan?.title ?? 'Practice',
+                                style: t.heading,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                'Practice · waits for each chord',
+                                style: t.caption.copyWith(color: c.textTertiary),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
                         ),
-                    ],
-                  ),
-                  Expanded(
-                    child: switch (state.status) {
-                      MicStatus.needsPermission => MicBlocked(
-                        title: 'Microphone needed',
-                        body: 'Practice listens to check each chord. Nothing is recorded.',
-                        action: 'Allow microphone',
-                        onAction: controller.requestPermission,
-                      ),
-                      MicStatus.permanentlyDenied => MicBlocked(
-                        title: 'Microphone is off',
-                        body: 'Turn on microphone access for Fretlight in Settings to practise.',
-                        action: 'Open Settings',
-                        onAction: controller.openSettings,
-                      ),
-                      _ when plan == null || session == null => const SizedBox.shrink(),
-                      _ when session.done => _Summary(session: session, plan: plan),
-                      _ => _Step(state: state, plan: plan, session: session),
-                    },
-                  ),
-                  const MicLevelMeter(),
-                  const SizedBox(height: Space.xs),
-                  Text(
-                    'Made for one guitar in a quiet room',
-                    style: t.caption.copyWith(color: c.textTertiary, fontSize: TypeScale.micro),
-                  ),
-                ],
+                        if (session != null && !session.done) ...[
+                          Text(
+                            '${session.index + 1} / ${session.targets.length}',
+                            style: t.label.copyWith(
+                              color: c.textSecondary,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                          const SizedBox(width: Space.sm),
+                        ],
+                        const TunerButton(),
+                      ],
+                    ),
+                    Expanded(
+                      child: switch (state.status) {
+                        MicStatus.needsPermission => MicBlocked(
+                          title: 'Microphone needed',
+                          body: 'Practice listens to check each chord. Nothing is recorded.',
+                          action: 'Allow microphone',
+                          onAction: controller.requestPermission,
+                        ),
+                        MicStatus.permanentlyDenied => MicBlocked(
+                          title: 'Microphone is off',
+                          body: 'Turn on microphone access for Fretlight in Settings to practise.',
+                          action: 'Open Settings',
+                          onAction: controller.openSettings,
+                        ),
+                        _ when plan == null || session == null => const SizedBox.shrink(),
+                        _ when session.done => _Summary(session: session, plan: plan),
+                        _ => _Step(state: state, plan: plan, session: session),
+                      },
+                    ),
+                    const MicLevelMeter(),
+                    const SizedBox(height: Space.xs),
+                    Text(
+                      'Made for one guitar in a quiet room',
+                      style: t.caption.copyWith(color: c.textTertiary, fontSize: TypeScale.micro),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -358,4 +365,27 @@ class _Summary extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Tells the controller when the practice screen goes away, so the time
+/// spent on it counts even if you leave halfway.
+class _OnClose extends StatefulWidget {
+  const _OnClose({required this.onClose, required this.child});
+
+  final VoidCallback onClose;
+  final Widget child;
+
+  @override
+  State<_OnClose> createState() => _OnCloseState();
+}
+
+class _OnCloseState extends State<_OnClose> {
+  @override
+  void dispose() {
+    widget.onClose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

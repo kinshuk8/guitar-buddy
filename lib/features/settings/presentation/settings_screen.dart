@@ -10,9 +10,12 @@ import 'package:fretlight/core/widgets/glass.dart';
 import 'package:fretlight/core/widgets/glass_controls.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
 import 'package:fretlight/features/learn/application/progress_controller.dart';
+import 'package:fretlight/features/practice/domain/practice_session.dart';
 import 'package:fretlight/features/progressions/data/progression_pack.dart';
 import 'package:fretlight/features/settings/application/appearance.dart';
+import 'package:fretlight/features/settings/application/chord_matching.dart';
 import 'package:fretlight/features/settings/application/sensitivity.dart';
+import 'package:fretlight/features/tuner/presentation/tuner_button.dart';
 import 'package:go_router/go_router.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -26,6 +29,7 @@ class SettingsScreen extends ConsumerWidget {
     final controller = ref.read(appearanceProvider.notifier);
     final pack = ref.watch(progressionPackProvider).value;
     final sensitivity = ref.watch(sensitivityProvider);
+    final matching = ref.watch(chordMatchingProvider);
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: AmbientBackground(
@@ -41,7 +45,10 @@ class SettingsScreen extends ConsumerWidget {
                     onTap: () => context.pop(),
                   ),
                   const SizedBox(width: Space.md),
-                  Semantics(header: true, child: Text('Settings', style: t.title)),
+                  Expanded(
+                    child: Semantics(header: true, child: Text('Settings', style: t.title)),
+                  ),
+                  const TunerButton(),
                 ],
               ),
               const SectionLabel('Appearance'),
@@ -73,6 +80,21 @@ class SettingsScreen extends ConsumerWidget {
               Text(
                 '${sensitivity.help} The meter on the Tune, Identify and Practice screens shows '
                 'whether the microphone hears you: the line is where it starts listening.',
+                style: t.caption.copyWith(color: c.textTertiary),
+              ),
+              const SizedBox(height: Space.lg),
+              Text('Chord matching', style: t.body),
+              const SizedBox(height: Space.xs),
+              StageSegmented<ChordMatching>(
+                options: ChordMatching.values,
+                selected: matching,
+                labelOf: (m) => m.label,
+                onChanged: ref.read(chordMatchingProvider.notifier).set,
+              ),
+              const SizedBox(height: Space.sm),
+              Text(
+                '${matching.detail} Lessons and practice use this to decide whether a strum '
+                'counts. A different chord whose notes clearly ring (Em for E) still doesn’t.',
                 style: t.caption.copyWith(color: c.textTertiary),
               ),
               const SectionLabel('Learning'),
