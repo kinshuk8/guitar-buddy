@@ -5,167 +5,130 @@
 <h1 align="center">Fretlight</h1>
 
 <p align="center">
-  <strong>Learn guitar step by step, with an app that listens to you play. Fully offline.</strong>
+  <strong>Learn guitar with an app that listens to you play.</strong><br>
+  Lessons, a tuner, chords and songs. Fully offline, no account, no ads.
+</p>
+
+<p align="center">
+  <a href="https://github.com/kinshuk8/guitar-buddy/releases/latest"><img src="https://img.shields.io/badge/Download_for_Android-APK-2f6f62?style=for-the-badge&logo=android&logoColor=white" alt="Download for Android"></a>
 </p>
 
 <p align="center">
   <a href="https://github.com/kinshuk8/guitar-buddy/releases"><img src="https://img.shields.io/badge/release-v0.10.1%20pre--release-2f6f62" alt="Release: v0.10.1 pre-release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licence-GPL--3.0-3b4a6b" alt="Licence: GPL-3.0"></a>
   <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS-3b4a6b" alt="Platforms: Android and iOS">
-  <img src="https://img.shields.io/badge/Flutter-3.47-02569B?logo=flutter&logoColor=white" alt="Built with Flutter 3.47">
-  <img src="https://img.shields.io/badge/network-none%20at%20runtime-555" alt="No network access at runtime">
+  <img src="https://img.shields.io/badge/internet-not%20used-555" alt="Internet: not used">
 </p>
-
----
-
-Fretlight takes you from your first chord to barre chords up the neck.
-A path of short lessons covers strings and notes, open chords, chord
-changes, strumming in time, reading tab and whole songs. The app listens
-through the microphone and checks what you play. Stars, levels, a daily
-streak and a chord workout built from your weakest chords keep practice
-going. The everyday tools are here too: a tuner, a chord library you can
-hear, a metronome, a note and chord identifier, and songs to play along
-with.
-
-Everything runs on the device. There is no account, no advertising, no
-analytics and no network access. The microphone is only open while a
-listening screen is visible, and audio is never recorded or stored.
 
 <p align="center">
-  <img src="docs/screenshots/home.jpg" width="300" alt="Home: the next lesson, today's practice goal with a Daily chord workout button, quick buttons for Metronome, Identify and Settings, recent songs, a Tuner button at the top, and four labelled tabs: Home, Practice, Songs and Tools">
+  <a href="#download">Download</a> ·
+  <a href="#screenshots">Screenshots</a> ·
+  <a href="#features">Features</a> ·
+  <a href="#privacy">Privacy</a> ·
+  <a href="#build-from-source">Build from source</a>
 </p>
 
-## Screens
+<p align="center">
+  <img src="docs/screenshots/home.jpg" width="240" alt="Home: up next is the C to G lesson, 7 of 10 minutes practised today, a 7-day streak, a Daily chord workout button, quick tools and recent songs">
+  &nbsp;
+  <img src="docs/screenshots/chord-drill.jpg" width="240" alt="An E chord drill: the E chord diagram, a Nice tick after the strum was heard, and a microphone level reading Hearing you">
+  &nbsp;
+  <img src="docs/screenshots/tuner.jpg" width="240" alt="Tuner reading A2, 7 cents sharp, with the A string highlighted">
+</p>
+
+## Why Fretlight
+
+- **It hears what you play.** Lessons and drills wait for the right chord, time your strums against the beat, and follow single notes. No tapping "done".
+- **A path, not a pile of videos.** 55 short lessons take you from the names of the strings to barre chords up the neck, with stars, levels and a daily streak.
+- **Built for your guitar.** Steel or nylon, new or old strings, a quiet room or a noisy one: listening adapts, and you choose how strictly chords are matched.
+- **Everything else you need.** A tuner, a metronome, 3,000+ chord shapes you can hear, a chord and note identifier, and songs to play along with.
+- **Private by design.** No account, no ads, no analytics. The Android app doesn't even ask for internet access.
+
+## Screenshots
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/practice.jpg" width="200" alt="Practice tab: the next lesson, a row of chords to drill with mastery rings, and labelled rows for Lessons, Daily chord workout, Chords and Changes"><br><sub>Practice</sub></td>
-    <td align="center"><img src="docs/screenshots/changes.jpg" width="200" alt="Changes: pick a first and second chord, then Switch between them or a One-minute race, with your best races listed"><br><sub>Chord changes</sub></td>
-    <td align="center"><img src="docs/screenshots/welcome.jpg" width="200" alt="Welcome screen asking how much guitar you have played, with three choices and a Skip button"><br><sub>First launch</sub></td>
+    <td align="center"><img src="docs/screenshots/practice.jpg" width="200" alt="Practice tab: up next lesson, chords to drill with mastery rings (E 15%, A 22%, C 38%, G 63%, D 71%), and rows for Lessons, Daily chord workout, Chords and Changes"><br><sub>Practice</sub></td>
+    <td align="center"><img src="docs/screenshots/lessons.jpg" width="200" alt="Lessons: the Beginner stage with 33 of 36 stars, lessons grouped into Meet your guitar, First chords and Strum, each with its stars"><br><sub>Lessons</sub></td>
+    <td align="center"><img src="docs/screenshots/progress.jpg" width="200" alt="Your progress: Improver, level 5 with 632 XP, skill bars for notes, chords, changes, rhythm, reading and songs, and a mastery ring for each chord"><br><sub>Progress</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/learn-progress.jpg" width="200" alt="Chord mastery rings for Em, Am, Dm, A, E, D, G and C, best changes a minute, and the Beginner lessons with their stars"><br><sub>Progress and chord mastery</sub></td>
-    <td align="center"><img src="docs/screenshots/change-race.jpg" width="200" alt="One-minute change race: a 60-second clock, a change counter, and the E minor chord to play"><br><sub>One-minute changes</sub></td>
-    <td align="center"><img src="docs/screenshots/strum-in-time.jpg" width="200" alt="Strum-in-time lesson at 60 BPM: four down-strum arrows, three already green for strums on the beat, and the beat counter"><br><sub>Strum in time</sub></td>
+    <td align="center"><img src="docs/screenshots/changes.jpg" width="200" alt="Changes: pick a first and a second chord, then Switch between them or a One-minute race; your best races are listed, such as Am to Em at 31 a minute"><br><sub>Chord changes</sub></td>
+    <td align="center"><img src="docs/screenshots/songs.jpg" width="200" alt="Songs: Add a song, then public-domain starter songs such as Amazing Grace, Auld Lang Syne and Aura Lee with their keys"><br><sub>Songs</sub></td>
+    <td align="center"><img src="docs/screenshots/play-along.jpg" width="200" alt="Amazing Grace playing along: chords above the lyrics with the current one highlighted, now and next chord diagrams, bar and tempo sliders and a pause button"><br><sub>Play along</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/tab-lesson.jpg" width="200" alt="Reading tab lesson: a short line of tab with the first note highlighted and the prompt Play the open G string"><br><sub>Play from tab</sub></td>
-    <td align="center"><img src="docs/screenshots/tuner.jpg" width="200" alt="Tuner reading A2 at 110.4 Hz, 6 cents sharp"><br><sub>Tuner</sub></td>
-    <td align="center"><img src="docs/screenshots/practice-mode.jpg" width="200" alt="Practice mode asking for a G chord with its diagram, the lyric line, the next chords and a Listening indicator"><br><sub>Song practice</sub></td>
+    <td align="center"><img src="docs/screenshots/song-practice.jpg" width="200" alt="Song practice: play G for the lyric Amazing grace, how sweet the sound, with a Nice tick and the next chords G7, C and G"><br><sub>Song practice</sub></td>
+    <td align="center"><img src="docs/screenshots/identify.jpg" width="200" alt="Identify in chord mode: a strummed C chord named C with its diagram"><br><sub>Identify</sub></td>
+    <td align="center"><img src="docs/screenshots/chord-library.jpg" width="200" alt="Chord library: Favourites and Draw your own, a search box, root note chips and the essential C chords as diagrams"><br><sub>Chord library</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/chord-library.jpg" width="200" alt="Chord library showing the eight essential C chords as diagrams with shape counts"><br><sub>Chord library</sub></td>
-    <td align="center"><img src="docs/screenshots/chord-detail.jpg" width="200" alt="C major chord diagram with finger numbers, note names under each string, and Play and Practise buttons"><br><sub>Chord detail</sub></td>
-    <td align="center"><img src="docs/screenshots/note-identifier.jpg" width="200" alt="Note identifier showing A2 at 110.0 Hz and every place to play it on a fretboard"><br><sub>Note identifier</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/song-library.jpg" width="200" alt="Song library listing public-domain starter songs such as Amazing Grace and Aura Lee with their keys"><br><sub>Song library</sub></td>
-    <td align="center"><img src="docs/screenshots/play-along.jpg" width="200" alt="Amazing Grace play-along with chords above the lyrics, the current and next chord diagrams, bar and tempo sliders"><br><sub>Play-along</sub></td>
-    <td align="center"><img src="docs/screenshots/metronome.jpg" width="200" alt="Metronome at 100 BPM in 4/4 with accent dots, a tempo slider, Tap and Start buttons"><br><sub>Metronome</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/arrange-song.jpg" width="200" alt="Arrange sheet with transpose, capo and tempo controls, a guitar-part strum pattern and a click toggle"><br><sub>Arrange a song</sub></td>
-    <td align="center"><img src="docs/screenshots/tools.jpg" width="200" alt="Tools: Tuner, Metronome, Identify, Chord library and Settings, each with a one-line description"><br><sub>Tools</sub></td>
-    <td align="center"><img src="docs/screenshots/settings.jpg" width="200" alt="Settings with appearance, left-handed mode, listening sensitivity and chord matching (Exact, Normal, Forgiving)"><br><sub>Settings</sub></td>
+    <td align="center"><img src="docs/screenshots/chord-detail.jpg" width="200" alt="C major: chord diagram with finger numbers and note names, Play and Practise buttons, Favourite and Advanced"><br><sub>Chord detail</sub></td>
+    <td align="center"><img src="docs/screenshots/metronome.jpg" width="200" alt="Metronome running at 100 BPM in 4/4 with accent dots, a tempo slider, Tap and Stop buttons"><br><sub>Metronome</sub></td>
+    <td align="center"><img src="docs/screenshots/settings.jpg" width="200" alt="Settings: appearance, left-handed mode, listening sensitivity, chord matching (Exact, Normal, Forgiving) and reset learning progress"><br><sub>Settings</sub></td>
   </tr>
 </table>
 
+Screenshots are from the iOS simulator running 0.10.1, with demo progress. On
+listening screens the microphone was fed the app's own synthesised guitar.
+
 ## Features
 
-**Easy to find your way.** Four labelled tabs: Home, Practice, Songs and
-Tools. The tuner is one tap from every screen, every feature is at most two
-taps from opening the app, and options most players never need sit under
-Advanced. A two-question welcome (how much you've played, which hand you
-strum with) sets the app up for you, and new players go straight into a
-five-minute first session.
+**Learn**
+- 55 lessons in four stages (Beginner, Improver, Adept, Mastery): strings and tuning, open chords, changes, strumming in time, notes on the neck, reading tab, barre chords, sevenths and the I–IV–V in five keys.
+- Games that check what you play: chord drills, one-minute change races, strum-in-time, note and tab lessons, plus quick quizzes that need no guitar.
+- Up to three stars a lesson, XP and levels, six skill bars, a daily goal and streak, and a mastery ring for every chord.
+- A two-question welcome sets you up; new players go straight into a five-minute first session.
 
-**A path from first chord to mastery.** 55 short lessons in four stages:
-Beginner, Improver, Adept and Mastery. You start with string names,
-tuning, Em and Am, your first change, down-strums and a first song. Later
-stages add every open chord, the folk strum, notes on the neck, reading
-tab, the F and B minor barre chords, sevenths, I–IV–V in G, D, A, E and C,
-and barre shapes up the neck. Lessons open in order, and you can start at
-a later stage if you already play.
+**Practise**
+- Drill any chord: five clean strums, with a ring showing how well you know it.
+- Pick any two chords to switch between, or race the clock and beat your best.
+- A daily chord workout built from your weakest chords.
+- Free practice counts toward your goal, streak and mastery, just like lessons.
 
-**Games that check what you play.** Chord drills and changes wait until
-they hear the chord. One-minute change races count your clean changes, and
-the app keeps your best for each pair. Strum-in-time lessons time every
-strum against the beat. Note and tab lessons follow each note you play.
-Quick quizzes on strings, notes, chord diagrams and tab need no guitar.
+**Play songs**
+- Twelve public-domain starter songs, plus any song you paste or import as [ChordPro](https://www.chordpro.org).
+- Hear the guitar part at the song's tempo; slow it down, loop a section, transpose, or set a capo (the app suggests the easiest one).
+- Practice mode shows each chord, waits until you play it, and afterwards lists the changes that slowed you down.
 
-**Progress you can see.** Each lesson earns up to three stars. XP builds
-levels, and six skill bars show where you are strong. There is a daily
-practice goal and streak, and a mastery ring for every chord you have met.
-The daily chord workout drills your two weakest chords and races you
-between them.
+**Tools**
+- Tuner with auto string detection, standard and alternate tunings, your own tunings and any A4 reference.
+- Chord library: over 3,000 checked shapes, searchable ("Am7", "G/B"), each one playable; draw your own and the app names it.
+- Identify: play a note to see every place it sits on the neck, or strum a chord to see its name.
+- Metronome with time signatures, subdivisions, per-beat accents and tap tempo.
 
-**Tune quickly and accurately.** Pick a tuning, or let the tuner find the
-string you play. It measures the string's fundamental, so a real steel
-string reads true rather than a few cents sharp. Standard, drop D, DADGAD,
-open G and half-step down are built in, alongside your own tunings and any
-A4 reference.
+**Listening that works on your guitar**
+- Learns your room's background level, so a fan or a quiet TV doesn't count as playing.
+- Tells the notes you play from their overtones, so a bright steel-string's E and Em are judged correctly.
+- Chord matching (Exact, Normal or Forgiving) sets how strictly a strum must match. A wrong chord with its third clearly ringing (Em for E) never counts.
 
-**Learn chords by sight and sound.** Over 3,000 checked voicings, grouped
-by root and type and searchable by name ("Am7", "G/B", "minor 7th"). Every
-shape plays back as a strum, and you can tap a single string to hear it.
-Draw your own shapes on a fretboard grid: the app names them from their
-notes.
+**For everyone**
+- Light and dark themes, left-handed mode, and screen-reader labels throughout.
 
-**Practise chords and changes.** Tap any chord to drill it, five clean
-strums at a time, with a ring showing how well you know it. Pick any two
-chords to switch between them, or race the clock for a minute and beat your
-best. Free practice counts toward your daily goal, streak and chord
-mastery, just like lessons.
+## Privacy
 
-**Play along with songs.** Twelve public-domain starter songs, plus any
-song you paste or import in [ChordPro](https://www.chordpro.org) format.
-Press play to hear the guitar part at the song's tempo, slow it down, jump
-to any bar, loop a section, transpose, or set a capo. The app suggests the
-capo position that gives the easiest shapes.
-
-**Practice mode that waits for you.** It shows the chord to play, listens,
-and advances when you play it. Afterwards it lists the changes that
-slowed you down.
-
-**Identify what you hear.** Play a note to see its name and every place
-it sits on the neck, or strum a chord to see its name.
-
-**Keep time.** A sample-accurate metronome with time signatures,
-subdivisions, per-beat accents and tap tempo.
-
-**Works in real rooms.** Listening screens learn the room's background
-level, so a fan or a quiet TV doesn't register as playing. A level meter
-shows when the app hears you, and a sensitivity setting adjusts for
-louder or quieter spaces. Chord matching (Exact, Normal or Forgiving)
-sets how closely a strum must match: Forgiving suits guitars that sound
-unusual, old strings, or barre chords that don't ring fully. Whatever the
-setting, the app checks the notes it hears, so the wrong chord with its
-third clearly ringing (Dm for D) doesn't count.
-
-**Built for everyone.** Light and dark themes, a left-handed mode, and
-screen-reader labels throughout.
+Fretlight runs entirely on your device. There is no account, no advertising,
+no analytics and no network access: on Android the only permission it asks
+for is the microphone. The microphone is open only while a listening screen
+is visible, and audio is analysed as it arrives; it is never recorded or
+stored. Your progress, songs and settings stay on the phone.
 
 ## Download
 
-Android builds are published on the
-[Releases page](https://github.com/kinshuk8/guitar-buddy/releases).
+1. Open the [latest release](https://github.com/kinshuk8/guitar-buddy/releases/latest) and download an APK. `arm64-v8a` suits most current phones; `universal` works on any.
+2. Open the file on your phone and allow installation from your browser or file manager when Android asks.
+3. Allow microphone access when the app first listens.
 
-1. Open the latest release and download the APK for your device. The
-   `universal` APK works on any phone; the `arm64-v8a` build is smaller
-   and suits most current phones.
-2. Open the file on your phone and allow installation from your browser or
-   file manager when Android asks.
-3. Grant microphone access the first time you open the tuner.
-
-Requires Android 7.0 (API 24) or later. Releases are currently
-pre-releases for testing. From 0.8.0 they are signed with the project's
-release key; if you installed 0.7.0 or earlier, uninstall it first. iOS (15.0 or later)
-builds from source; no App Store build is published yet.
+Requires Android 7.0 or later. Releases are pre-releases for testing, signed
+with the project's release key since 0.8.0 (uninstall 0.7.0 or earlier
+first). Each release lists SHA-256 checksums. iOS (15.0 or later) builds
+from source; there is no App Store build yet.
 
 ## How it works
 
 | Layer | Technology |
 |---|---|
-| UI | Flutter 3.47, Dart 3.13, custom glass design system |
+| UI | Flutter 3.50, Dart 3.14, custom glass design system |
 | State and navigation | Riverpod 3, go_router |
 | Storage | Drift (SQLite): settings, favourites, tunings, songs and chords |
 | Audio input | `record` (PCM stream), `audio_session` |
@@ -203,9 +166,9 @@ tool/         offline data converters and the icon renderer (never shipped)
 docs/         design spikes, accuracy and data reports, screenshots
 ```
 
-## Development
+## Build from source
 
-**Requirements:** Flutter 3.47 or later (Dart 3.13), Xcode for iOS, and
+**Requirements:** Flutter 3.50 or later (Dart 3.14), Xcode for iOS, and
 the Android SDK with JDK 17 for Android.
 
 ```bash
@@ -256,7 +219,6 @@ in a `{meta: source}` line, which the test suite checks.
 - A Google Play listing
 - An App Store build for iOS
 - Validation against real guitar recordings across more phones and rooms
-- A final open-source licence for the code
 
 ## Contributing
 
@@ -265,10 +227,15 @@ Issues and pull requests are welcome. Before opening a pull request, run
 offline: no new dependency may make network calls at runtime. Any bundled
 song must be in the public domain and cite its source.
 
-## License
+To refresh the screenshots, boot an iOS simulator and run
+`tool/screenshots.sh`.
 
-No open-source licence has been chosen yet, so the code is not currently
-licensed for reuse. The bundled fonts, chord data, progression data and
-packages each carry their own licences, listed in
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The progression data is
-CC BY-NC 4.0, which allows non-commercial use only.
+## Licence
+
+Fretlight is free software under the [GNU General Public License v3.0](LICENSE):
+you may use, study, share and change it, and anything you distribute that is
+built from it must be released under the same licence.
+
+The bundled fonts, chord data, progression data and packages keep their own
+licences, listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The
+progression data is CC BY-NC 4.0, which allows non-commercial use only.
