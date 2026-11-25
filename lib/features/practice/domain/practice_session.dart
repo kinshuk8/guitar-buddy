@@ -61,10 +61,16 @@ enum ChordMatching {
   /// loudest note, than the chord's own third...
   final double maxClash;
 
-  /// ...and no more than this share of the sound on notes outside the
-  /// chord. Measured on many guitars and mics: the right chord stays under
-  /// 0.45; a different chord starts around 0.48.
-  static const maxOutside = 0.47;
+  /// ...and no more than this share of the notes played outside the chord
+  /// (overtones of lower strings mostly taken out). Measured on many
+  /// guitars, bright steel strings included, and mics: the right chord
+  /// stays under 0.5.
+  static const maxOutside = 0.52;
+
+  /// The same, when the identifier's answer has a different root and the
+  /// chord asked for was only a near miss: the right chord stays under
+  /// 0.36, a different one starts around 0.47.
+  static const maxOutsideOtherRoot = 0.42;
 }
 
 /// How a strum compared with the chord asked for.
@@ -148,15 +154,23 @@ final class PracticeSession {
       // mics blur the top few candidates together).
       verdict = Verdict.hit;
     }
-    // Anything short of the identifier naming the chord outright must agree
-    // with the notes heard. Without this, Dm passes for D: its notes look
-    // like "D5", and D5 is D missing a note.
+    // The notes played (overtones of lower strings taken out) must agree.
+    // Without this, Dm passes for D: its notes look like "D5", and D5 is D
+    // missing a note. On a bright steel string even the identifier's own
+    // answer can be fooled (an Em's low E strings ring a G# about as loud
+    // as its G, and it says E), so the third is checked whatever it said;
+    // the spread of notes only when it didn't name the chord.
     final named =
         reading.chord != null &&
         judge(target, reading.chord!, matching: ChordMatching.exact) == Verdict.hit;
-    if (verdict != Verdict.miss && !named) {
-      final e = evidence(target, reading.chroma);
-      if (e.thirdClash > matching.maxClash || e.outside > ChordMatching.maxOutside) {
+    if (verdict != Verdict.miss) {
+      final e = evidence(target, reading.played.length == 12 ? reading.played : reading.chroma);
+      // An answer on another root (F for Dm) is held to a tighter spread
+      // than the same chord coloured (Emaj7 for a bright E).
+      final limit = heard.root == target.root
+          ? ChordMatching.maxOutside
+          : ChordMatching.maxOutsideOtherRoot;
+      if (e.thirdClash > matching.maxClash || (!named && e.outside > limit)) {
         verdict = Verdict.miss;
       }
     }

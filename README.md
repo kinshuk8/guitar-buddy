@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/kinshuk8/guitar-buddy/releases"><img src="https://img.shields.io/badge/release-v0.10.0%20pre--release-2f6f62" alt="Release: v0.10.0 pre-release"></a>
+  <a href="https://github.com/kinshuk8/guitar-buddy/releases"><img src="https://img.shields.io/badge/release-v0.10.1%20pre--release-2f6f62" alt="Release: v0.10.1 pre-release"></a>
   <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS-3b4a6b" alt="Platforms: Android and iOS">
   <img src="https://img.shields.io/badge/Flutter-3.47-02569B?logo=flutter&logoColor=white" alt="Built with Flutter 3.47">
   <img src="https://img.shields.io/badge/network-none%20at%20runtime-555" alt="No network access at runtime">

@@ -18,6 +18,7 @@ final class ChordReading {
     this.settled = true,
     this.candidates = const [],
     this.chroma = const [],
+    this.played = const [],
   });
 
   /// Null while unsure or for a single note.
@@ -52,6 +53,10 @@ final class ChordReading {
   /// it: a minor third ringing where a major one belongs is a wrong chord,
   /// whatever the closest name.
   final List<double> chroma;
+
+  /// The strum's notes without overtones ([ChordEstimate.played]), averaged
+  /// like [chroma]. Empty when not measured.
+  final List<double> played;
 
   static const notSureBelow = 0.35;
 
@@ -100,6 +105,8 @@ final class ChordSmoother {
   /// The strum's chroma, weighted like the scores.
   final List<double> _chroma = List.filled(12, 0);
   double _chromaWeight = 0;
+  final List<double> _played = List.filled(12, 0);
+  double _playedWeight = 0;
 
   /// Levels of the last few frames. A strum's rise is spread over several
   /// overlapping windows, so it's measured from the quietest of them, not
@@ -144,6 +151,8 @@ final class ChordSmoother {
     _acc.clear();
     _chroma.fillRange(0, 12, 0);
     _chromaWeight = 0;
+    _played.fillRange(0, 12, 0);
+    _playedWeight = 0;
     _shown = null;
     _challenger = null;
     _challengerFrames = 0;
@@ -213,6 +222,8 @@ final class ChordSmoother {
       _acc.clear();
       _chroma.fillRange(0, 12, 0);
       _chromaWeight = 0;
+      _played.fillRange(0, 12, 0);
+      _playedWeight = 0;
       _singles.clear();
       _sinceOnset = 0;
     }
@@ -236,6 +247,12 @@ final class ChordSmoother {
         _chroma[i] = _chroma[i] * (1 - alpha) + w * e.chroma[i];
       }
       _chromaWeight = _chromaWeight * (1 - alpha) + w;
+    }
+    if (e.played.length == 12) {
+      for (var i = 0; i < 12; i++) {
+        _played[i] = _played[i] * (1 - alpha) + w * e.played[i];
+      }
+      _playedWeight = _playedWeight * (1 - alpha) + w;
     }
 
     _singles.add(e.singleNote);
@@ -291,6 +308,7 @@ final class ChordSmoother {
     return _reading = ChordReading(
       candidates: [for (final r in ranked.take(6)) (chord: r.key, score: r.value)],
       chroma: _chromaWeight == 0 ? const [] : [for (final v in _chroma) v / _chromaWeight],
+      played: _playedWeight == 0 ? const [] : [for (final v in _played) v / _playedWeight],
       chord: confidence >= ChordReading.notSureBelow ? shown : null,
       confidence: confidence,
       bass: e.bass,
