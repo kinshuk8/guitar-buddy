@@ -92,10 +92,7 @@ class IdentifyScreen extends ConsumerWidget {
                 },
               ),
               if (state.status == MicStatus.interrupted)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: Space.sm),
-                  child: Text('Paused while another app uses the microphone', style: text.caption),
-                ),
+                MicPaused(onResume: () => unawaited(controller.resumeMic())),
               const MicLevelMeter(),
               const SizedBox(height: Space.xs),
               // Honest about the limits, without shouting.

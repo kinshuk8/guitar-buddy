@@ -122,8 +122,17 @@ final class TunerController extends Notifier<TunerState> {
 
   /// Called by the tuner screen when it becomes visible/hidden or the app
   /// moves between foreground and background.
+  /// Coming into view (or the app back to the foreground) starts afresh: an
+  /// interruption whose end was never reported must not keep the mic off.
   Future<void> setActive({required bool active}) {
+    if (active && !_wanted) _interrupted = false;
     _wanted = active;
+    return _enqueue(_reconcile);
+  }
+
+  /// Listens again after an interruption (the "Resume" button).
+  Future<void> resume() {
+    _interrupted = false;
     return _enqueue(_reconcile);
   }
 
@@ -276,6 +285,8 @@ final class TunerController extends Notifier<TunerState> {
   void _onInputEvent(InputEvent e) {
     switch (e) {
       case InterruptionBegan():
+        // One that happened while the tuner was hidden isn't its concern.
+        if (!_wanted) return;
         _interrupted = true;
       case InterruptionEnded():
         _interrupted = false;

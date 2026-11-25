@@ -206,6 +206,8 @@ class _LessonScreenState extends ConsumerState<LessonScreen> with SingleTickerPr
                   if (ready &&
                       state.phase == LessonPhase.playing &&
                       lesson.steps[state.step].listens) ...[
+                    if (state.status == MicStatus.interrupted)
+                      MicPaused(onResume: () => unawaited(controller.resumeMic())),
                     const MicLevelMeter(),
                     const SizedBox(height: Space.xs),
                   ],

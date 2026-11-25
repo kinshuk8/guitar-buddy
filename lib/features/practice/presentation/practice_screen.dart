@@ -111,6 +111,8 @@ class PracticeScreen extends ConsumerWidget {
                         _ => _Step(state: state, plan: plan, session: session),
                       },
                     ),
+                    if (state.status == MicStatus.interrupted)
+                      MicPaused(onResume: () => unawaited(controller.resumeMic())),
                     const MicLevelMeter(),
                     const SizedBox(height: Space.xs),
                     Text(

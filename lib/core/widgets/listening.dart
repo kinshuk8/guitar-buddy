@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fretlight/core/design/theme.dart';
 import 'package:fretlight/core/design/tokens.dart';
+import 'package:fretlight/core/widgets/glass_controls.dart';
 import 'package:fretlight/core/widgets/stage_buttons.dart';
 
 /// Tells [onChanged] whether this screen should be listening: visible (its
@@ -104,4 +105,35 @@ class MicBlocked extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Shown under the level meter while a call or Siri has the microphone,
+/// with a way back if the end of it is never reported.
+class MicPaused extends StatelessWidget {
+  const MicPaused({required this.onResume, super.key});
+
+  final VoidCallback onResume;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: Space.sm),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Flexible(
+          child: Text(
+            'Paused while another app uses the microphone',
+            style: context.stageText.caption,
+          ),
+        ),
+        const SizedBox(width: Space.sm),
+        GlassPill(
+          label: 'Resume',
+          semantics: 'Resume listening',
+          icon: Icons.mic_rounded,
+          onTap: onResume,
+        ),
+      ],
+    ),
+  );
 }

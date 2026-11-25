@@ -186,6 +186,8 @@ final class LessonController extends Notifier<LessonState> {
 
   Future<void> openSettings() => _mic.openSettings();
 
+  Future<void> resumeMic() => _mic.resume();
+
   /// Starts the lesson from its first step.
   Future<void> start() async {
     if (state.lesson == null) return;

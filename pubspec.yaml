@@ -1,7 +1,7 @@
 name: fretlight
 description: "A new Flutter project."
 publish_to: 'none'
-version: 0.10.1+12
+version: 0.10.2+13
 
 environment:
   sdk: ^3.13.7

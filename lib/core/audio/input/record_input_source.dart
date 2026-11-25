@@ -60,9 +60,17 @@ final class RecordInputSource implements AudioInputSource {
     await AppAudioSession.ensureCapture();
     final session = await AudioSession.instance;
     await _interruptions?.cancel();
-    _interruptions = session.interruptionEventStream.listen((e) {
-      _events.add(e.begin ? const InterruptionBegan() : const InterruptionEnded());
-    });
+    // iOS only. There a call or Siri deactivates the session and capture
+    // really stops. On Android the events are audio focus, which governs
+    // playback, not recording: a notification sound "takes focus" for a
+    // second while the mic carries on fine. Treating that as an
+    // interruption paused the mic, and having let go of the session, the
+    // app was never told focus came back.
+    if (Platform.isIOS) {
+      _interruptions = session.interruptionEventStream.listen((e) {
+        _events.add(e.begin ? const InterruptionBegan() : const InterruptionEnded());
+      });
+    }
     _sessionConfigured = true;
   }
 

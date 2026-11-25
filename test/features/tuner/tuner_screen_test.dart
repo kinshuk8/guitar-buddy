@@ -125,6 +125,57 @@ void main() {
     expect(mic.isCapturing, isTrue);
   });
 
+  testWidgets('a pause whose end never comes: Resume listens again', (tester) async {
+    final mic = await pumpApp(tester);
+    mic.interrupt(began: true);
+    await settleMic(tester);
+    expect(mic.isCapturing, isFalse);
+    await tester.tap(find.bySemanticsLabel('Resume listening'));
+    await settleMic(tester);
+    expect(mic.isCapturing, isTrue);
+    expect(find.text('Paused while another app uses the microphone'), findsNothing);
+  });
+
+  testWidgets('a pause whose end never comes: back from the background, listening again', (
+    tester,
+  ) async {
+    final mic = await pumpApp(tester);
+    mic.interrupt(began: true);
+    await settleMic(tester);
+    expect(mic.isCapturing, isFalse);
+    for (final s in [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(s);
+      await tester.pump();
+    }
+    await settleMic(tester);
+    expect(mic.isCapturing, isTrue);
+  });
+
+  testWidgets('an interruption while the tuner was closed does not keep it paused', (tester) async {
+    final mic = await pumpApp(tester);
+    goTo(tester, '/home');
+    await tester.pump();
+    await settleMic(tester);
+    expect(mic.isCapturing, isFalse);
+    mic
+      ..interrupt(began: true)
+      ..interrupt(began: false)
+      ..interrupt(began: true);
+    await settleMic(tester);
+    goTo(tester, '/tuner');
+    await tester.pump();
+    await settleMic(tester);
+    expect(mic.isCapturing, isTrue);
+    expect(find.text('Paused while another app uses the microphone'), findsNothing);
+  });
+
   testWidgets('locking a string and changing tuning', (tester) async {
     await pumpApp(tester);
     final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
