@@ -19,6 +19,7 @@ final class ChordEstimate {
     required this.rmsDb,
     required this.distinctNotes,
     this.singleNote,
+    this.played = const [],
   });
 
   static const silent = ChordEstimate(
@@ -34,6 +35,12 @@ final class ChordEstimate {
 
   /// Normalised pitch-class energy, C first (length 12, or empty).
   final List<double> chroma;
+
+  /// Like [chroma], but with the overtones of lower strings taken out: the
+  /// notes actually fretted or open. A bright steel string's low E puts a
+  /// strong G# (its 5th harmonic) into an Em, about as loud as the G that's
+  /// played; here that G# counts for little. Empty when not measured.
+  final List<double> played;
 
   /// Lowest strong pitch class, if one stood out.
   final PitchClass? bass;
@@ -59,6 +66,7 @@ final class ChordEstimate {
           rmsDb: rmsDb,
           distinctNotes: distinctNotes,
           singleNote: singleNote,
+          played: played,
         );
 }
 
@@ -224,6 +232,8 @@ final class ChromaChordDetector implements ChordDetector {
       chroma[n.pc] += math.pow(n.m, _compression) * n.fit / (1 + n.hz / 2800);
     }
 
+    final played = _played(notes);
+
     final norm = _l2(chroma);
     if (norm == 0) {
       return ChordEstimate(
@@ -340,8 +350,66 @@ final class ChromaChordDetector implements ChordDetector {
       rmsDb: level,
       distinctNotes: distinct,
       singleNote: single,
+      played: played,
     );
   }
+
+  /// Pitch-class energy of the notes played, not their overtones.
+  ///
+  /// A peak is an overtone of a lower string when it sits at a whole
+  /// multiple (other than an octave) of a lower peak whose own 2nd, 3rd or
+  /// 4th harmonic is there too. An E string's 5th harmonic is G#: in an Em
+  /// it's explained by the E below, with its B and high E above; in an E
+  /// the fretted G# has no lower note it could belong to, so it stays. A
+  /// peak an octave above a note that's really played keeps its weight.
+  static List<double> _played(List<({double hz, double m, int pc, double fit})> notes) {
+    final out = Float64List(12);
+    if (notes.isEmpty) return const [];
+    // Ascending in pitch (the peak scan already is).
+    final overtone = List<bool>.filled(notes.length, false);
+    double cents(double a, double b) => (1200 * math.log(a / b) / math.ln2).abs();
+    int? near(double hz, int below) {
+      for (var j = 0; j < below; j++) {
+        if (cents(notes[j].hz, hz) < _overtoneCents) return j;
+      }
+      return null;
+    }
+
+    for (var i = 0; i < notes.length; i++) {
+      final n = notes[i];
+      final octaveBelow = near(n.hz / 2, i);
+      if (octaveBelow != null && !overtone[octaveBelow]) continue;
+      for (var j = 0; j < i && !overtone[i]; j++) {
+        final f = notes[j];
+        if (f.pc == n.pc) continue;
+        final k = (n.hz / f.hz).round();
+        if (k < 3 || k > 10 || cents(n.hz, k * f.hz) >= _overtoneCents) continue;
+        for (var h = 2; h <= 4 && h < k; h++) {
+          if (near(h * f.hz, i) != null) {
+            overtone[i] = true;
+            break;
+          }
+        }
+      }
+    }
+    for (final (i, n) in notes.indexed) {
+      out[n.pc] +=
+          (overtone[i] ? _overtoneWeight : 1) *
+          math.pow(n.m, _compression) *
+          n.fit /
+          (1 + n.hz / 2800);
+    }
+    final norm = _l2(out);
+    if (norm == 0) return const [];
+    return List.unmodifiable([for (final v in out) v / norm]);
+  }
+
+  /// How far (cents) a partial may sit from an exact multiple: steel
+  /// strings run a little sharp up the series.
+  static const _overtoneCents = 22.0;
+
+  /// What an overtone still counts for in [ChordEstimate.played].
+  static const _overtoneWeight = 0.1;
 
   /// Pitch-class steps of the first six harmonics: 1, 2 (octave), 3 (octave
   /// + fifth), 4, 5 (two octaves + major third), 6. Weights fall off like a
