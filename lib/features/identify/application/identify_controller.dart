@@ -102,6 +102,8 @@ final class IdentifyController extends Notifier<IdentifyState> {
 
   Future<void> retry() => _mic.restart();
 
+  Future<void> resumeMic() => _mic.resume();
+
   void setMode(IdentifyMode mode) {
     if (mode == state.mode) return;
     state = state.copyWith(mode: mode, note: () => null, chord: () => null);

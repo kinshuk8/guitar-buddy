@@ -18,7 +18,9 @@ sealed class InputEvent {
   const InputEvent();
 }
 
-/// A phone call, Siri, an alarm or another app took the microphone.
+/// A phone call, Siri or an alarm took the microphone (iOS). The end may
+/// never be reported (iOS doesn't always send it), so listeners must also
+/// recover on their own (MicLifecycle does).
 final class InterruptionBegan extends InputEvent {
   const InterruptionBegan();
 }

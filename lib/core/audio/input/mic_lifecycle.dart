@@ -35,6 +35,9 @@ final class MicLifecycle {
     required this.isAlive,
   }) {
     _events = input.events.listen((e) {
+      // Only an interruption of this screen's listening counts: one that
+      // happened while it was hidden is over as far as it's concerned.
+      if (e is InterruptionBegan && !_wanted) return;
       _interrupted = e is InterruptionBegan;
       unawaited(_enqueue(_reconcile));
     });
@@ -58,8 +61,17 @@ final class MicLifecycle {
 
   MicStatus get status => _status;
 
+  /// Coming into view (or the app back to the foreground) starts afresh: an
+  /// interruption whose end was never reported must not keep the mic off.
   Future<void> setActive({required bool active}) {
+    if (active && !_wanted) _interrupted = false;
     _wanted = active;
+    return _enqueue(_reconcile);
+  }
+
+  /// Listens again after an interruption (the "Resume" button).
+  Future<void> resume() {
+    _interrupted = false;
     return _enqueue(_reconcile);
   }
 
@@ -74,6 +86,7 @@ final class MicLifecycle {
 
   /// Stops and starts again (the "Try again" button).
   Future<void> restart() async {
+    _interrupted = false;
     await setActive(active: false);
     await setActive(active: true);
   }

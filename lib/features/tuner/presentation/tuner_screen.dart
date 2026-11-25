@@ -29,7 +29,6 @@ class _TunerScreenState extends ConsumerState<TunerScreen> {
   @override
   Widget build(BuildContext context) {
     final status = ref.watch(tunerProvider.select((s) => s.status));
-    final text = context.stageText;
     return ListenWhileVisible(
       onChanged: ({required active}) =>
           unawaited(ref.read(tunerProvider.notifier).setActive(active: active)),
@@ -78,13 +77,7 @@ class _TunerScreenState extends ConsumerState<TunerScreen> {
                     child: MicLevelMeter(),
                   ),
                   if (status == TunerStatus.interrupted)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: Space.md),
-                      child: Text(
-                        'Paused while another app uses the microphone',
-                        style: text.caption,
-                      ),
-                    ),
+                    MicPaused(onResume: () => unawaited(ref.read(tunerProvider.notifier).resume())),
                   const _StringRow(),
                 ],
               ),

@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/kinshuk8/guitar-buddy/releases"><img src="https://img.shields.io/badge/release-v0.10.1%20pre--release-2f6f62" alt="Release: v0.10.1 pre-release"></a>
+  <a href="https://github.com/kinshuk8/guitar-buddy/releases"><img src="https://img.shields.io/badge/release-v0.10.2%20pre--release-2f6f62" alt="Release: v0.10.2 pre-release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-GPL--3.0-3b4a6b" alt="Licence: GPL-3.0"></a>
   <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS-3b4a6b" alt="Platforms: Android and iOS">
   <img src="https://img.shields.io/badge/internet-not%20used-555" alt="Internet: not used">

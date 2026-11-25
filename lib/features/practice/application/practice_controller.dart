@@ -181,6 +181,8 @@ final class PracticeController extends Notifier<PracticeState> {
 
   Future<void> openSettings() => _mic.openSettings();
 
+  Future<void> resumeMic() => _mic.resume();
+
   void skip() {
     state.session?.skip();
     state = state.copyWith(heard: () => null, verdict: () => null);
